@@ -2,11 +2,9 @@ import json
 import os
 import time
 import urllib.parse
-
 import inject
 import requests
-from client import Severity
-from src import ILogger, IStreamSets
+from sdc_client.interfaces import ILogger, IStreamSets
 
 MAX_TRIES = 3
 PREVIEW_TIMEOUT = os.environ.get('STREAMSETS_PREVIEW_TIMEOUT', 30000)
@@ -38,12 +36,12 @@ def _parse_error_response(result):
     try:
         response = result.json()
     except json.decoder.JSONDecodeError:
-        raise _ApiClientException(result.text)
+        raise ApiClientException(result.text)
 
     if result.status_code == 401:
         raise UnauthorizedException('Unauthorized')
 
-    raise _ApiClientException(
+    raise ApiClientException(
         response['RemoteException']['message'],
         response['RemoteException']['exception'],
     )
@@ -106,11 +104,11 @@ class _StreamSetsApiClient:
         return self.session.delete(self._build_url('pipeline', pipeline_id))
 
     @endpoint
-    def get_pipeline_logs(self, pipeline_id: str, severity: Severity = None):
-        self.logger.info(f'Get pipeline logs: `{pipeline_id}`, logging severity:{severity.value}')
+    def get_pipeline_logs(self, pipeline_id: str, severity: str = None):
+        self.logger.info(f'Get pipeline logs: `{pipeline_id}`, logging severity:{severity}')
         params = {'pipeline': pipeline_id, 'endingOffset': -1}
-        if severity.value:
-            params['severity.value'] = severity.value
+        if severity:
+            params['severity.value'] = severity
         return self.session.get(self._build_url('system', 'logs'), params=params)
 
     @endpoint
@@ -176,7 +174,7 @@ class _StreamSetsApiClient:
         for i in range(1, tries + 1):
             response = self.get_preview_status(pipeline_id, preview_id)
             if response['status'] == 'TIMED_OUT':
-                raise _ApiClientException(f'No data. Connection timed out')
+                raise ApiClientException(f'No data. Connection timed out')
 
             # todo constants
             if response['status'] not in [
@@ -186,7 +184,7 @@ class _StreamSetsApiClient:
 
             delay = initial_delay ** i
             if i == tries:
-                raise _ApiClientException(f'No data')
+                raise ApiClientException(f'No data')
             self.logger.info(f'Waiting for data. Check again after {delay} seconds...')
             time.sleep(delay)
 
@@ -228,14 +226,14 @@ class _StreamSetsApiClient:
                 return True
             delay = initial_delay ** i
             if i == tries:
-                raise _PipelineFreezeException(
+                raise PipelineFreezeException(
                     f"Pipeline `{pipeline_id}` is still {response['status']} after {tries} tries"
                 )
             self.logger.info(f"Pipeline `{pipeline_id}` is {response['status']}. Check again after {delay} seconds...")
             time.sleep(delay)
 
 
-class _ApiClientException(Exception):
+class ApiClientException(Exception):
     def __init__(self, message: str, exception_type: str = ''):
         self.exception_type = exception_type
         self.message = message
@@ -247,5 +245,5 @@ class UnauthorizedException(Exception):
         self.exception_type = ''
 
 
-class _PipelineFreezeException(Exception):
+class PipelineFreezeException(Exception):
     pass

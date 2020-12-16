@@ -1,7 +1,7 @@
 import inject
 
-from client import Client, choose_streamsets
-from src import IPipeline, IStreamSetsProvider, IPipelineProvider, ILogger, IStreamSets
+from sdc_client.client import Client, choose_streamsets
+from sdc_client.interfaces import IPipeline, IStreamSetsProvider, IPipelineProvider, ILogger, IStreamSets
 
 
 class StreamsetsBalancer:

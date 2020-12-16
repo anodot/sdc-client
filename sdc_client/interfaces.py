@@ -72,9 +72,10 @@ class IPipelineProvider(ABC):
     def save(self, pipeline: IPipeline):
         pass
 
-    # todo хрень?
+    # todo bad method
     @abstractmethod
     def count_by_streamsets(self) -> dict[int, int]:
+        """ Returns { streamsets_id: number_of_pipelines } """
         pass
 
 
