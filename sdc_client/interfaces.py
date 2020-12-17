@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, List, Dict
 
 
 class IStreamSets(ABC):
@@ -37,7 +37,7 @@ class IPipeline(ABC):
         pass
 
     @abstractmethod
-    def get_offset(self) -> str:
+    def get_offset(self) -> Optional[str]:
         pass
 
     @abstractmethod
@@ -59,13 +59,13 @@ class IStreamSetsProvider(ABC):
         pass
 
     @abstractmethod
-    def get_all(self) -> list[IStreamSets]:
+    def get_all(self) -> List[IStreamSets]:
         pass
 
 
 class IPipelineProvider(ABC):
     @abstractmethod
-    def get_pipelines(self) -> list[IPipeline]:
+    def get_pipelines(self) -> List[IPipeline]:
         pass
 
     @abstractmethod
@@ -74,7 +74,7 @@ class IPipelineProvider(ABC):
 
     # todo bad method
     @abstractmethod
-    def count_by_streamsets(self) -> dict[int, int]:
+    def count_by_streamsets(self) -> Dict[int, int]:
         """ Returns { streamsets_id: number_of_pipelines } """
         pass
 

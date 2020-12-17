@@ -48,7 +48,7 @@ def _parse_error_response(result):
 
 
 class _StreamSetsApiClient:
-    logger: inject.attr(ILogger)
+    logger = inject.attr(ILogger)
 
     def __init__(self, streamsets_: IStreamSets):
         self.base_url = streamsets_.get_url()

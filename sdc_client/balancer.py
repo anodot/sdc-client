@@ -1,6 +1,7 @@
 import inject
 
-from sdc_client.client import Client, choose_streamsets
+from typing import List, Dict
+from sdc_client import client
 from sdc_client.interfaces import IPipeline, IStreamSetsProvider, IPipelineProvider, ILogger, IStreamSets
 
 
@@ -10,13 +11,12 @@ class StreamsetsBalancer:
     logger = inject.attr(ILogger)
 
     def __init__(self):
-        self.streamsets_pipelines: dict[int, list[IPipeline]] = self._get_streamsets_pipelines()
-        self.client = Client()
+        self.streamsets_pipelines: Dict[int, List[IPipeline]] = self._get_streamsets_pipelines()
 
     def balance(self):
         while not self.is_balanced():
             pipeline = self.streamsets_pipelines[self._get_busiest_streamsets_id()].pop()
-            to_streamsets = choose_streamsets(
+            to_streamsets = client.choose_streamsets(
                 self.pipeline_provider.count_by_streamsets(),
                 self.streamsets_provider.get_all()
             )
@@ -26,7 +26,7 @@ class StreamsetsBalancer:
 
     def unload_streamsets(self, streamsets: IStreamSets):
         for pipeline in self.streamsets_pipelines[streamsets.get_id()]:
-            to_streamsets = choose_streamsets(
+            to_streamsets = client.choose_streamsets(
                 self.pipeline_provider.count_by_streamsets(),
                 self.streamsets_provider.get_all(),
                 exclude=streamsets.get_id()
@@ -37,15 +37,14 @@ class StreamsetsBalancer:
         self.logger.info(
             f'Moving `{pipeline.get_id()}` from `{pipeline.get_streamsets().get_url()}` to `{to_streamsets.get_url()}`'
         )
-        # todo ниче что зависимость от inject?
-        should_start = self.client.get_pipeline_status(pipeline) in [IPipeline.STATUS_STARTING, IPipeline.STATUS_RUNNING]
+        should_start = client.get_pipeline_status(pipeline) in [IPipeline.STATUS_STARTING, IPipeline.STATUS_RUNNING]
 
-        self.client.delete(pipeline)
+        client.delete(pipeline)
         pipeline.set_streamsets(to_streamsets)
-        self.client.create(pipeline)
+        client.create(pipeline)
         self.pipeline_provider.save(pipeline)
         if should_start:
-            self.client.start(pipeline)
+            client.start(pipeline)
 
     def _get_streamsets_pipelines(self) -> dict:
         pipelines = self.pipeline_provider.get_pipelines()

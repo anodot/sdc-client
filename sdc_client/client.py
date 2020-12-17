@@ -5,13 +5,11 @@ import inject
 
 from enum import Enum
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List, Dict
 from sdc_client.api_client import _StreamSetsApiClient, ApiClientException, PipelineFreezeException
 from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipelineProvider, IPipeline
 
-logger = inject.instance(ILogger)
-
-_clients: dict[int, _StreamSetsApiClient] = {}
+_clients: Dict[int, _StreamSetsApiClient] = {}
 
 
 def _client(pipeline: IPipeline) -> _StreamSetsApiClient:
@@ -81,7 +79,7 @@ def get_pipeline_metrics(pipeline: IPipeline) -> dict:
     return _client(pipeline).get_pipeline_metrics(pipeline.get_id())
 
 
-def get_all_pipelines() -> list[dict]:
+def get_all_pipelines() -> List[dict]:
     pipelines = []
     for streamsets_ in inject.instance(IStreamSetsProvider).get_all():
         client = _StreamSetsApiClient(streamsets_)
@@ -180,13 +178,13 @@ def force_stop(pipeline: IPipeline):
 
 
 def stop(pipeline: IPipeline):
-    logger.info(f'Stopping the pipeline `{pipeline.get_id()}`')
+    inject.instance(ILogger).info(f'Stopping the pipeline `{pipeline.get_id()}`')
     client = _client(pipeline)
     client.stop_pipeline(pipeline.get_id())
     try:
         client.wait_for_status(pipeline.get_id(), IPipeline.STATUS_STOPPED)
     except PipelineFreezeException:
-        logger.info(f'Force stopping the pipeline `{pipeline.get_id()}`')
+        inject.instance(ILogger).info(f'Force stopping the pipeline `{pipeline.get_id()}`')
         force_stop(pipeline)
 
 
@@ -214,21 +212,25 @@ def start(pipeline: IPipeline, wait_for_sending_data: bool = False):
     client = _client(pipeline)
     client.start_pipeline(pipeline.get_id())
     client.wait_for_status(pipeline.get_id(), IPipeline.STATUS_RUNNING)
-    logger.info(f'{pipeline.get_id()} pipeline is running')
+    inject.instance(ILogger).info(f'{pipeline.get_id()} pipeline is running')
     if wait_for_sending_data:
         try:
             if _wait_for_sending_data(pipeline):
-                logger.info(f'{pipeline.get_id()} pipeline is sending data')
+                inject.instance(ILogger).info(f'{pipeline.get_id()} pipeline is sending data')
             else:
-                logger.info(f'{pipeline.get_id()} pipeline did not send any data')
+                inject.instance(ILogger).info(f'{pipeline.get_id()} pipeline did not send any data')
         except PipelineException as e:
-            logger.error(str(e))
+            inject.instance(ILogger).error(str(e))
 
 
 def _update_pipeline(pipeline: IPipeline):
+    client = _client(pipeline)
     if pipeline.get_offset():
-        _client(pipeline).post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset()))
-    return _client(pipeline).update_pipeline(pipeline.get_id(), pipeline.get_config())
+        client.post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset()))
+    p = client.get_pipeline(pipeline.get_id())
+    config = pipeline.get_config()
+    config['uuid'] = p['uuid']
+    return client.update_pipeline(pipeline.get_id(), config)
 
 
 def _wait_for_sending_data(pipeline: IPipeline) -> bool:
@@ -247,10 +249,10 @@ def _wait_for_sending_data(pipeline: IPipeline) -> bool:
             raise PipelineException(f"Pipeline {pipeline.get_id()} has {stats['errors']} errors")
         delay = initial_delay ** i
         if i == tries:
-            logger.warning(
+            inject.instance(ILogger).warning(
                 f'Pipeline {pipeline.get_id()} did not send any data. Received number of records - {stats["in"]}')
             return False
-        logger.info(
+        inject.instance(ILogger).info(
             f'Waiting for pipeline `{pipeline.get_id()}` to send data. Check again after {delay} seconds...')
         time.sleep(delay)
 
@@ -285,8 +287,8 @@ def _transform_logs(logs: dict) -> list:
 
 
 def choose_streamsets(
-        pipeline_streamsets: dict[int, int],
-        streamsets: list[IStreamSets],
+        pipeline_streamsets: Dict[int, int],
+        streamsets: List[IStreamSets],
         *, exclude: int = None
 ) -> IStreamSets:
     def add_empty(s: IStreamSets):
