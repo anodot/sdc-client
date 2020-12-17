@@ -300,7 +300,7 @@ def choose_streamsets(
     if exclude:
         del pipeline_streamsets[exclude]
     id_ = min(pipeline_streamsets, key=pipeline_streamsets.get)
-    return streamsets[id_]
+    return inject.instance(IStreamSetsProvider).get(id_)
 
 
 def check_connection(streamsets: IStreamSets):

@@ -23,11 +23,14 @@ def endpoint(func):
                 if res.text:
                     return res.json()
             except requests.ConnectionError:
+                if i == MAX_TRIES - 1:
+                    raise
                 continue
             except requests.exceptions.HTTPError:
                 if res.text:
                     _parse_error_response(res)
                 raise
+            return
 
     return wrapper
 
