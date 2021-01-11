@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict
+from typing import Optional, List
 
 
 class IStreamSets(ABC):
@@ -64,17 +64,11 @@ class IStreamSetsProvider(ABC):
 
 class IPipelineProvider(ABC):
     @abstractmethod
-    def get_pipelines(self) -> List[IPipeline]:
+    def get_all(self) -> List[IPipeline]:
         pass
 
     @abstractmethod
     def save(self, pipeline: IPipeline):
-        pass
-
-    # todo bad method
-    @abstractmethod
-    def count_by_streamsets(self) -> Dict[int, int]:
-        """ Returns { streamsets_id: number_of_pipelines } """
         pass
 
 
