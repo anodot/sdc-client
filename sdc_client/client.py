@@ -6,8 +6,9 @@ import inject
 from enum import Enum
 from datetime import datetime
 from typing import Optional, List, Dict
+from sdc_client import balancer
 from sdc_client.api_client import _StreamSetsApiClient, ApiClientException, PipelineFreezeException
-from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipelineProvider, IPipeline
+from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipeline
 
 _clients: Dict[int, _StreamSetsApiClient] = {}
 
@@ -27,10 +28,9 @@ class Severity(Enum):
 
 def create(pipeline: IPipeline):
     if not pipeline.get_streamsets():
-        pipeline.set_streamsets(choose_streamsets(
-            inject.instance(IPipelineProvider).count_by_streamsets(),
-            inject.instance(IStreamSetsProvider).get_all()
-        ))
+        pipeline.set_streamsets(
+            balancer.least_loaded_streamsets(balancer.get_streamsets_pipelines())
+        )
     try:
         _client(pipeline).create_pipeline(pipeline.get_id())
     except ApiClientException as e:
@@ -55,9 +55,12 @@ def update(pipeline: IPipeline):
         start(pipeline)
 
 
-# todo it's used only for tests
-def get_pipeline(pipeline: IPipeline) -> dict:
-    return _client(pipeline).get_pipeline(pipeline.get_id())
+def exists(pipeline_id: str) -> bool:
+    for streamsets_ in inject.instance(IStreamSetsProvider).get_all():
+        for pipeline_config in _StreamSetsApiClient(streamsets_).get_pipelines():
+            if pipeline_config['title'] == pipeline_id:
+                return True
+    return False
 
 
 def get_pipeline_logs(pipeline: IPipeline, severity: Severity, number_of_records: int) -> list:
@@ -284,23 +287,6 @@ def _transform_logs(logs: dict) -> list:
             continue
         transformed.append([item['timestamp'], item['severity'], item['category'], item['message']])
     return transformed
-
-
-def choose_streamsets(
-        pipeline_streamsets: Dict[int, int],
-        streamsets: List[IStreamSets],
-        *, exclude: int = None
-) -> IStreamSets:
-    def add_empty(s: IStreamSets):
-        if s.get_id() not in pipeline_streamsets:
-            pipeline_streamsets[s.get_id()] = 0
-
-    # choose streamsets with the lowest number of pipelines
-    map(add_empty, streamsets)
-    if exclude:
-        del pipeline_streamsets[exclude]
-    id_ = min(pipeline_streamsets, key=pipeline_streamsets.get)
-    return inject.instance(IStreamSetsProvider).get(id_)
 
 
 def check_connection(streamsets: IStreamSets):
