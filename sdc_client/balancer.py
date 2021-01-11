@@ -45,7 +45,7 @@ class StreamsetsBalancer:
         return max(lengths) - min(lengths) < 2
 
 
-def get_streamsets_pipelines() -> dict[IStreamSets, list[IPipeline]]:
+def get_streamsets_pipelines() -> Dict[IStreamSets, List[IPipeline]]:
     pipelines = inject.instance(IPipelineProvider).get_all()
     # todo remove when monitoring is deleted
     pipelines = filter(
@@ -69,7 +69,7 @@ def most_loaded_streamsets(streamsets_pipelines: Dict[IStreamSets, List[IPipelin
 
 
 def least_loaded_streamsets(
-        streamsets_pipelines: Dict[IStreamSets, list[IPipeline]],
+        streamsets_pipelines: Dict[IStreamSets, List[IPipeline]],
         *, exclude: IStreamSets = None
 ) -> IStreamSets:
     if exclude:
