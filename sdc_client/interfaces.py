@@ -32,8 +32,7 @@ class IPipeline(ABC):
         pass
 
     @abstractmethod
-    def get_config(self) -> dict:
-        """ Returns StreamSets pipeline config """
+    def get_streamsets_config(self) -> dict:
         pass
 
     @abstractmethod

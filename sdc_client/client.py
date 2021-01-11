@@ -128,7 +128,7 @@ def _get_metric_errors(pipeline: IPipeline, metrics: Optional[dict]) -> list:
     errors = []
     if metrics:
         for name, counter in metrics['counters'].items():
-            stage_name = re.search('stage\.(.+)\.errorRecords\.counter', name)
+            stage_name = re.search(r'stage\.(.+)\.errorRecords\.counter', name)
             if counter['count'] == 0 or not stage_name:
                 continue
             for error in _client(pipeline).get_pipeline_errors(pipeline.get_id(), stage_name.group(1)):
@@ -228,7 +228,7 @@ def _update_pipeline(pipeline: IPipeline):
     if pipeline.get_offset():
         client.post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset()))
     p = client.get_pipeline(pipeline.get_id())
-    config = pipeline.get_config()
+    config = pipeline.get_streamsets_config()
     config['uuid'] = p['uuid']
     return client.update_pipeline(pipeline.get_id(), config)
 
