@@ -55,9 +55,12 @@ def update(pipeline: IPipeline):
         start(pipeline)
 
 
-# todo it's used only for tests
-def get_pipeline(pipeline: IPipeline) -> dict:
-    return _client(pipeline).get_pipeline(pipeline.get_id())
+def exists(pipeline_id: str) -> bool:
+    for streamsets_ in inject.instance(IStreamSetsProvider).get_all():
+        for pipeline_config in _StreamSetsApiClient(streamsets_).get_pipelines():
+            if pipeline_config['title'] == pipeline_id:
+                return True
+    return False
 
 
 def get_pipeline_logs(pipeline: IPipeline, severity: Severity, number_of_records: int) -> list:
