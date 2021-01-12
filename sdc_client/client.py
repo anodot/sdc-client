@@ -22,8 +22,8 @@ def _client(pipeline: IPipeline) -> _StreamSetsApiClient:
 
 
 class Severity(Enum):
-    INFO = 'info'
-    ERROR = 'error'
+    INFO = 'INFO'
+    ERROR = 'ERROR'
 
 
 def create(pipeline: IPipeline):
