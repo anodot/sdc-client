@@ -26,5 +26,8 @@ jobs:
         with:
           path: "requirements.txt"
 
+      - name: Install sdc_client
+        run: python setup.py install
+
       - name: Test
         run: python tests/test_balancer.py
