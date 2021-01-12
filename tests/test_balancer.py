@@ -161,8 +161,3 @@ class TestBalancer(unittest.TestCase):
             s3: [PipelineMock(), PipelineMock(), PipelineMock()],
         }, exclude=s2)
         assert r == s1
-
-
-# todo test start
-if __name__ == "__main__":
-    unittest.main()

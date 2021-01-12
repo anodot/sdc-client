@@ -55,7 +55,7 @@ def get_streamsets_pipelines() -> Dict[IStreamSets, List[IPipeline]]:
     sp = {}
     for pipeline_ in pipelines:
         streamsets = pipeline_.get_streamsets()
-        if not streamsets:
+        if streamsets:
             if streamsets not in sp:
                 sp[streamsets] = []
             sp[streamsets].append(pipeline_)
