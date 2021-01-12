@@ -55,9 +55,10 @@ def get_streamsets_pipelines() -> Dict[IStreamSets, List[IPipeline]]:
     sp = {}
     for pipeline_ in pipelines:
         streamsets = pipeline_.get_streamsets()
-        if streamsets not in sp:
-            sp[streamsets] = []
-        sp[streamsets].append(pipeline_)
+        if not streamsets:
+            if streamsets not in sp:
+                sp[streamsets] = []
+            sp[streamsets].append(pipeline_)
     for streamsets_ in inject.instance(IStreamSetsProvider).get_all():
         if streamsets_ not in sp:
             sp[streamsets_] = []
