@@ -27,6 +27,7 @@ class Severity(Enum):
 
 
 def create(pipeline: IPipeline):
+    # todo remove this if check and make streamsets mandatory
     if not pipeline.get_streamsets():
         pipeline.set_streamsets(
             balancer.least_loaded_streamsets(balancer.get_streamsets_pipelines())
