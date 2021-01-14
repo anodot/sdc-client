@@ -230,10 +230,7 @@ def _update_pipeline(pipeline: IPipeline):
     client = _client(pipeline)
     if pipeline.get_offset():
         client.post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset()))
-    p = client.get_pipeline(pipeline.get_id())
-    config = pipeline.get_streamsets_config()
-    config['uuid'] = p['uuid']
-    return client.update_pipeline(pipeline.get_id(), config)
+    return client.update_pipeline(pipeline.get_id(), pipeline.get_streamsets_config())
 
 
 def _wait_for_sending_data(pipeline: IPipeline) -> bool:
