@@ -220,6 +220,10 @@ class _StreamSetsApiClient:
             params={'stageInstanceName': stage_name}
         )
 
+    @endpoint
+    def get_jmx(self, query: str):
+        return self.session.get(self._build_url('system', 'jmx'), params={'qry': query})
+
     def wait_for_status(self, pipeline_id: str, status: str):
         tries = 5
         initial_delay = 3

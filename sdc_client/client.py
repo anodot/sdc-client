@@ -13,6 +13,7 @@ from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPi
 _clients: Dict[int, _StreamSetsApiClient] = {}
 
 
+# TODO: pass StreamSets instance as an argument
 def _client(pipeline: IPipeline) -> _StreamSetsApiClient:
     if not pipeline.get_streamsets():
         raise StreamsetsException(f'Pipeline `{pipeline.get_id()}` does not belong to any StreamSets')
@@ -26,8 +27,16 @@ class Severity(Enum):
     ERROR = 'ERROR'
 
 
+# TODO use _client method ?
+def _get_client(streamsets_: IStreamSets) -> _StreamSetsApiClient:
+    global _clients
+    if streamsets_.get_id() not in _clients:
+        _clients[streamsets_.get_id()] = _StreamSetsApiClient(streamsets_)
+    return _clients[streamsets_.get_id()]
+
+
 def create(pipeline: IPipeline):
-    # todo remove this if check and make streamsets mandatory
+    # todo remove this if check and make streamsets mandatory after that fix todos above
     if not pipeline.get_streamsets():
         pipeline.set_streamsets(
             balancer.least_loaded_streamsets(balancer.get_streamsets_pipelines())
@@ -69,10 +78,6 @@ def get_pipeline_logs(pipeline: IPipeline, severity: Severity, number_of_records
     return _transform_logs(
         client.get_pipeline_logs(pipeline.get_id(), severity.value)[:number_of_records]
     )
-
-
-def get_pipeline_status_by_id(pipeline: IPipeline) -> str:
-    return get_pipeline_status(pipeline)
 
 
 def get_pipeline_status(pipeline: IPipeline) -> str:
@@ -175,7 +180,7 @@ def force_stop(pipeline: IPipeline):
         client.stop_pipeline(pipeline.get_id())
     except ApiClientException:
         pass
-    if not get_pipeline_status_by_id(pipeline) == IPipeline.STATUS_STOPPING:
+    if not get_pipeline_status(pipeline) == IPipeline.STATUS_STOPPING:
         raise PipelineException("Can't force stop a pipeline not in the STOPPING state")
     client.force_stop(pipeline.get_id())
     client.wait_for_status(pipeline.get_id(), IPipeline.STATUS_STOPPED)
@@ -267,6 +272,10 @@ def get_pipeline_offset(pipeline: IPipeline) -> Optional[str]:
     if res:
         return json.dumps(res)
     return None
+
+
+def get_jmx(streamsets: IStreamSets, query: str) -> dict:
+    return _get_client(streamsets).get_jmx(query)
 
 
 def _format_timestamp(utc_time) -> str:
