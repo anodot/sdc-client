@@ -47,11 +47,6 @@ class StreamsetsBalancer:
 
 def get_streamsets_pipelines() -> Dict[IStreamSets, List[IPipeline]]:
     pipelines = inject.instance(IPipelineProvider).get_all()
-    # todo remove when monitoring is deleted
-    pipelines = filter(
-        lambda p: not p.get_id().startswith('Monitoring'),
-        pipelines
-    )
     sp = {}
     for pipeline_ in pipelines:
         streamsets = pipeline_.get_streamsets()
