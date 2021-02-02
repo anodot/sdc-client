@@ -163,12 +163,12 @@ class _StreamSetsApiClient:
 
     @endpoint
     def get_preview(self, pipeline_id: str, previewer_id: str):
-        self.logger.info(f'Validate pipeline `{pipeline_id}`')
+        self.logger.info(f'Get preview `{pipeline_id}`')
         return self.session.get(self._build_url('pipeline', pipeline_id, 'preview', previewer_id))
 
     @endpoint
     def get_preview_status(self, pipeline_id: str, previewer_id: str):
-        self.logger.info(f'Validate pipeline `{pipeline_id}`')
+        self.logger.info(f'Get preview status `{pipeline_id}`')
         return self.session.get(self._build_url('pipeline', pipeline_id, 'preview', previewer_id, 'status'))
 
     def wait_for_preview(self, pipeline_id: str, preview_id: str):
