@@ -180,7 +180,10 @@ def force_stop(pipeline: IPipeline):
         client.stop_pipeline(pipeline.get_id())
     except ApiClientException:
         pass
-    if not get_pipeline_status(pipeline) == IPipeline.STATUS_STOPPING:
+    status = get_pipeline_status(pipeline)
+    if status == IPipeline.STATUS_STOPPED:
+        return
+    if not status == IPipeline.STATUS_STOPPING:
         raise PipelineException("Can't force stop a pipeline not in the STOPPING state")
     client.force_stop(pipeline.get_id())
     client.wait_for_status(pipeline.get_id(), IPipeline.STATUS_STOPPED)
