@@ -28,11 +28,11 @@ class Severity(Enum):
 
 
 # TODO use _client method ?
-def _get_client(streamsets_: IStreamSets) -> _StreamSetsApiClient:
+def _get_client(streamsets: IStreamSets) -> _StreamSetsApiClient:
     global _clients
-    if streamsets_.get_id() not in _clients:
-        _clients[streamsets_.get_id()] = _StreamSetsApiClient(streamsets_)
-    return _clients[streamsets_.get_id()]
+    if streamsets.get_id() not in _clients:
+        _clients[streamsets.get_id()] = _StreamSetsApiClient(streamsets)
+    return _clients[streamsets.get_id()]
 
 
 def create(pipeline: IPipeline):
@@ -66,10 +66,16 @@ def update(pipeline: IPipeline):
 
 
 def exists(pipeline_id: str) -> bool:
-    for streamsets_ in inject.instance(IStreamSetsProvider).get_all():
-        for pipeline_config in _StreamSetsApiClient(streamsets_).get_pipelines():
-            if pipeline_config['title'] == pipeline_id:
-                return True
+    for client in map(_get_client, inject.instance(IStreamSetsProvider).get_all()):
+        if _exists_in_instance(pipeline_id, client):
+            return True
+    return False
+
+
+def _exists_in_instance(pipeline_id: str, instance_client: _StreamSetsApiClient) -> bool:
+    for pipeline_config in instance_client.get_pipelines():
+        if pipeline_config['title'] == pipeline_id:
+            return True
     return False
 
 
@@ -90,16 +96,16 @@ def get_pipeline_metrics(pipeline: IPipeline) -> dict:
 
 def get_all_pipelines() -> List[dict]:
     pipelines = []
-    for streamsets_ in inject.instance(IStreamSetsProvider).get_all():
-        client = _StreamSetsApiClient(streamsets_)
+    for streamsets in inject.instance(IStreamSetsProvider).get_all():
+        client = _StreamSetsApiClient(streamsets)
         pipelines = pipelines + client.get_pipelines()
     return pipelines
 
 
 def get_all_pipeline_statuses() -> dict:
     statuses = {}
-    for streamsets_ in inject.instance(IStreamSetsProvider).get_all():
-        client = _StreamSetsApiClient(streamsets_)
+    for streamsets in inject.instance(IStreamSetsProvider).get_all():
+        client = _StreamSetsApiClient(streamsets)
         statuses = {**statuses, **client.get_pipeline_statuses()}
     return statuses
 
@@ -211,12 +217,18 @@ def delete(pipeline: IPipeline):
     pipeline.delete_streamsets()
 
 
+def force_delete(pipeline_id: str):
+    for client in map(_get_client, inject.instance(IStreamSetsProvider).get_all()):
+        if _exists_in_instance(pipeline_id, client):
+            client.delete_pipeline(pipeline_id)
+
+
 # todo return type
 def create_preview(pipeline: IPipeline):
     return _client(pipeline).create_preview(pipeline.get_id())
 
 
-def wait_for_preview(pipeline: IPipeline, preview_id: str):
+def wait_for_preview(pipeline: IPipeline, preview_id: str) -> (list, list):
     return _client(pipeline).wait_for_preview(pipeline.get_id(), preview_id)
 
 

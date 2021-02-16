@@ -171,7 +171,7 @@ class _StreamSetsApiClient:
         self.logger.info(f'Get preview status `{pipeline_id}`')
         return self.session.get(self._build_url('pipeline', pipeline_id, 'preview', previewer_id, 'status'))
 
-    def wait_for_preview(self, pipeline_id: str, preview_id: str):
+    def wait_for_preview(self, pipeline_id: str, preview_id: str) -> (list, list):
         tries = 6
         initial_delay = 2
         for i in range(1, tries + 1):
@@ -187,7 +187,8 @@ class _StreamSetsApiClient:
 
             delay = initial_delay ** i
             if i == tries:
-                raise ApiClientException(f'No data')
+                self.logger.info('No data')
+                return [], []
             self.logger.info(f'Waiting for data. Check again after {delay} seconds...')
             time.sleep(delay)
 
