@@ -107,11 +107,9 @@ class _StreamSetsApiClient:
         return self.session.delete(self._build_url('pipeline', pipeline_id))
 
     @endpoint
-    def get_pipeline_logs(self, pipeline_id: str, severity: str = None):
+    def get_pipeline_logs(self, pipeline_id: str, severity: str):
         self.logger.info(f'Get pipeline logs: `{pipeline_id}`, logging severity:{severity}')
-        params = {'pipeline': pipeline_id, 'endingOffset': -1}
-        if severity:
-            params['severity.value'] = severity
+        params = {'pipeline': pipeline_id, 'endingOffset': -1, 'severity.value': severity}
         return self.session.get(self._build_url('system', 'logs'), params=params)
 
     @endpoint
