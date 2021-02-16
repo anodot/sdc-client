@@ -66,14 +66,15 @@ def update(pipeline: IPipeline):
 
 
 def exists(pipeline_id: str) -> bool:
-    for client in map(_get_client, inject.instance(IStreamSetsProvider).get_all()):
-        if _exists_in_instance(pipeline_id, client):
+    # for client in map(_get_client, inject.instance(IStreamSetsProvider).get_all()):
+    for streamsets in inject.instance(IStreamSetsProvider).get_all():
+        if _exists(pipeline_id, streamsets):
             return True
     return False
 
 
-def _exists_in_instance(pipeline_id: str, instance_client: _StreamSetsApiClient) -> bool:
-    for pipeline_config in instance_client.get_pipelines():
+def _exists(pipeline_id: str, streamsets: IStreamSets) -> bool:
+    for pipeline_config in _get_client(streamsets).get_pipelines():
         if pipeline_config['title'] == pipeline_id:
             return True
     return False
@@ -218,13 +219,22 @@ def delete(pipeline: IPipeline):
 
 
 def force_delete(pipeline_id: str):
-    for client in map(_get_client, inject.instance(IStreamSetsProvider).get_all()):
-        if _exists_in_instance(pipeline_id, client):
-            client.delete_pipeline(pipeline_id)
+    for streamsets in inject.instance(IStreamSetsProvider).get_all():
+        if _exists(pipeline_id, streamsets):
+            class AnonymousPipeline(IPipeline):
+                def get_id(self):
+                    return pipeline_id
+
+                def get_streamsets(self):
+                    return streamsets
+
+                def delete_streamsets(self):
+                    pass
+
+            delete(AnonymousPipeline())
 
 
-# todo return type
-def create_preview(pipeline: IPipeline):
+def create_preview(pipeline: IPipeline) -> dict:
     return _client(pipeline).create_preview(pipeline.get_id())
 
 
