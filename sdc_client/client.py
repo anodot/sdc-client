@@ -79,10 +79,12 @@ def _exists(pipeline_id: str, streamsets: IStreamSets) -> bool:
     return False
 
 
-def get_pipeline_logs(pipeline: IPipeline, severity: Severity, number_of_records: int) -> list:
+def get_pipeline_logs(pipeline: IPipeline, severity: Optional[Severity], number_of_records: int) -> list:
     client = _client(pipeline)
+    if severity is not None:
+        severity = severity.value
     return _transform_logs(
-        client.get_pipeline_logs(pipeline.get_id(), severity.value)[:number_of_records]
+        client.get_pipeline_logs(pipeline.get_id(), severity)[:number_of_records]
     )
 
 
