@@ -66,7 +66,6 @@ def update(pipeline: IPipeline):
 
 
 def exists(pipeline_id: str) -> bool:
-    # for client in map(_get_client, inject.instance(IStreamSetsProvider).get_all()):
     for streamsets in inject.instance(IStreamSetsProvider).get_all():
         if _exists(pipeline_id, streamsets):
             return True
