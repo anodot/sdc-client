@@ -220,7 +220,7 @@ def delete(pipeline: IPipeline):
 def force_delete(pipeline_id: str):
     for streamsets in inject.instance(IStreamSetsProvider).get_all():
         if _exists(pipeline_id, streamsets):
-            class AnonymousPipeline(IPipeline):
+            class AnonymousPipeline:
                 def get_id(self):
                     return pipeline_id
 
