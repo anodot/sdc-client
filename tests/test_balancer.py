@@ -150,14 +150,3 @@ class TestBalancer(unittest.TestCase):
             s3: [PipelineMock(), PipelineMock(), PipelineMock()],
         })
         assert r == s2
-
-    def test_least_loaded_streamsets_exclude(self):
-        s1 = StreamSetsMock()
-        s2 = StreamSetsMock()
-        s3 = StreamSetsMock()
-        r = balancer.least_loaded_streamsets({
-            s1: [PipelineMock(), PipelineMock()],
-            s2: [],
-            s3: [PipelineMock(), PipelineMock(), PipelineMock()],
-        }, exclude=s2)
-        assert r == s1

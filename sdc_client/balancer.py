@@ -20,8 +20,9 @@ class StreamsetsBalancer:
             self.logger.info(f'Moved `{pipeline.get_id()}` to `{pipeline.get_streamsets().get_url()}`')
 
     def unload_streamsets(self, streamsets: IStreamSets):
+        del self.streamsets_pipelines[streamsets]
         for pipeline in self.streamsets_pipelines[streamsets]:
-            to_streamsets = least_loaded_streamsets(self.streamsets_pipelines, exclude=streamsets)
+            to_streamsets = least_loaded_streamsets(self.streamsets_pipelines)
             self._move(pipeline, to_streamsets)
 
     def _move(self, pipeline: IPipeline, to_streamsets: IStreamSets):
@@ -64,10 +65,5 @@ def most_loaded_streamsets(streamsets_pipelines: Dict[IStreamSets, List[IPipelin
     return max(streamsets_pipelines, key=lambda x: len(streamsets_pipelines[x]))
 
 
-def least_loaded_streamsets(
-        streamsets_pipelines: Dict[IStreamSets, List[IPipeline]],
-        *, exclude: IStreamSets = None
-) -> IStreamSets:
-    if exclude and exclude in streamsets_pipelines:
-        del streamsets_pipelines[exclude]
+def least_loaded_streamsets(streamsets_pipelines: Dict[IStreamSets, List[IPipeline]]) -> IStreamSets:
     return min(streamsets_pipelines, key=lambda x: len(streamsets_pipelines[x]))

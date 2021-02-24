@@ -65,12 +65,12 @@ class _StreamSetsApiClient:
 
     @endpoint
     def create_pipeline(self, name: str):
-        self.logger.info(f'Create pipeline `{name}`')
+        self.logger.info(f'Create pipeline `{name}` in `{self.base_url}`')
         return self.session.put(self._build_url('pipeline', name))
 
     @endpoint
     def update_pipeline(self, pipeline_id: str, pipeline_config: dict):
-        self.logger.info(f'Update pipeline `{pipeline_id}`')
+        self.logger.info(f'Update pipeline `{pipeline_id}` in `{self.base_url}`')
         return self.session.post(self._build_url('pipeline', pipeline_id), json=pipeline_config)
 
     @endpoint
@@ -103,7 +103,7 @@ class _StreamSetsApiClient:
 
     @endpoint
     def delete_pipeline(self, pipeline_id: str):
-        self.logger.info(f'Delete pipeline `{pipeline_id}`')
+        self.logger.info(f'Delete pipeline `{pipeline_id}` from `{self.base_url}`')
         return self.session.delete(self._build_url('pipeline', pipeline_id))
 
     @endpoint
