@@ -68,6 +68,6 @@ def least_loaded_streamsets(
         streamsets_pipelines: Dict[IStreamSets, List[IPipeline]],
         *, exclude: IStreamSets = None
 ) -> IStreamSets:
-    if exclude:
+    if exclude and exclude in streamsets_pipelines:
         del streamsets_pipelines[exclude]
     return min(streamsets_pipelines, key=lambda x: len(streamsets_pipelines[x]))
