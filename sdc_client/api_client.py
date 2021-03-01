@@ -187,7 +187,6 @@ class _StreamSetsApiClient:
 
             delay = initial_delay ** i
             if i == tries:
-                self.logger.info('No data')
                 return [], []
             self.logger.info(f'Waiting for data. Check again after {delay} seconds...')
             time.sleep(delay)
