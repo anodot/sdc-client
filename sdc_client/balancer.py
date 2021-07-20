@@ -1,5 +1,6 @@
 import inject
 
+from copy import deepcopy
 from typing import List, Dict
 from sdc_client import client
 from sdc_client.interfaces import IPipeline, IStreamSetsProvider, IPipelineProvider, ILogger, IStreamSets
@@ -20,8 +21,9 @@ class StreamsetsBalancer:
             self.logger.info(f'Moved `{pipeline.get_id()}` to `{pipeline.get_streamsets().get_url()}`')
 
     def unload_streamsets(self, streamsets: IStreamSets):
+        streamsets_pipelines = deepcopy(self.streamsets_pipelines[streamsets])
         del self.streamsets_pipelines[streamsets]
-        for pipeline in self.streamsets_pipelines[streamsets]:
+        for pipeline in streamsets_pipelines:
             to_streamsets = least_loaded_streamsets(self.streamsets_pipelines)
             self._move(pipeline, to_streamsets)
 
