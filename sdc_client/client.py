@@ -46,7 +46,7 @@ def create(pipeline: IPipeline):
     except ApiClientException as e:
         raise StreamsetsException(str(e))
     try:
-        _update_pipeline(pipeline)
+        _update_pipeline(pipeline, set_offset=True)
     except ApiClientException as e:
         delete(pipeline)
         raise StreamsetsException(str(e))
@@ -258,9 +258,9 @@ def start(pipeline: IPipeline, wait_for_sending_data: bool = False):
             inject.instance(ILogger).error(str(e))
 
 
-def _update_pipeline(pipeline: IPipeline):
+def _update_pipeline(pipeline: IPipeline, set_offset=False):
     client = _client(pipeline)
-    if pipeline.get_offset():
+    if set_offset and pipeline.get_offset():
         client.post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset()))
     config = pipeline.get_streamsets_config()
     config['uuid'] = client.get_pipeline(pipeline.get_id())['uuid']
