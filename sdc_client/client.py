@@ -316,12 +316,16 @@ def _format(info: dict) -> str:
 
 
 def _transform_logs(logs: dict) -> list:
-    transformed = []
-    for item in logs:
-        if 'message' not in item:
-            continue
-        transformed.append([item['timestamp'], item['severity'], item['category'], item['message']])
-    return transformed
+    return [
+        [
+            item['timestamp'],
+            item['severity'],
+            item['category'],
+            item['message'],
+        ]
+        for item in logs
+        if 'message' in item
+    ]
 
 
 def check_connection(streamsets: IStreamSets):
