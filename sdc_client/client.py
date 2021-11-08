@@ -100,7 +100,7 @@ def get_all_pipelines() -> List[dict]:
     pipelines = []
     for streamsets in inject.instance(IStreamSetsProvider).get_all():
         client = _StreamSetsApiClient(streamsets)
-        pipelines = pipelines + client.get_pipelines()
+        pipelines += client.get_pipelines()
     return pipelines
 
 
@@ -118,7 +118,7 @@ def get_pipeline_info(pipeline: IPipeline, number_of_history_records: int) -> di
     metrics = json.loads(status['metrics']) if status['metrics'] else get_pipeline_metrics(pipeline)
     pipeline_info = client.get_pipeline(pipeline.get_id())
     history = client.get_pipeline_history(pipeline.get_id())
-    info = {
+    return {
         'status': '{status} {message}'.format(**status),
         'metrics': _get_metrics_string(metrics),
         'metric_errors': _get_metric_errors(pipeline, metrics),
@@ -126,7 +126,6 @@ def get_pipeline_info(pipeline: IPipeline, number_of_history_records: int) -> di
         'stage_issues': _extract_stage_issues(pipeline_info),
         'history': _get_history_info(history, number_of_history_records)
     }
-    return info
 
 
 def _get_metrics_string(metrics_: dict) -> str:
@@ -177,7 +176,7 @@ def _get_history_info(history: list, number_of_history_records: int) -> list:
     info = []
     for item in history[:number_of_history_records]:
         metrics_str = _get_metrics_string(json.loads(item['metrics'])) if item['metrics'] else ' '
-        message = item['message'] if item['message'] else ' '
+        message = item['message'] or ' '
         info.append([_format_timestamp(item['timeStamp']), item['status'], message, metrics_str])
     return info
 
@@ -185,13 +184,14 @@ def _get_history_info(history: list, number_of_history_records: int) -> list:
 def force_stop(pipeline: IPipeline):
     client = _client(pipeline)
     try:
+        # todo IT SHOULD FORCE STOP
         client.stop_pipeline(pipeline.get_id())
     except ApiClientException:
         pass
     status = get_pipeline_status(pipeline)
     if status == IPipeline.STATUS_STOPPED:
         return
-    if not status == IPipeline.STATUS_STOPPING:
+    if status != IPipeline.STATUS_STOPPING:
         raise PipelineException("Can't force stop a pipeline not in the STOPPING state")
     client.force_stop(pipeline.get_id())
     client.wait_for_status(pipeline.get_id(), IPipeline.STATUS_STOPPED)
@@ -312,7 +312,7 @@ def _format_timestamp(utc_time) -> str:
 
 def _format(info: dict) -> str:
     keys = ['severity', 'configGroup', 'configName', 'message']
-    return ' - '.join([info[key] for key in keys if key in info])
+    return ' - '.join(info[key] for key in keys if key in info)
 
 
 def _transform_logs(logs: dict) -> list:

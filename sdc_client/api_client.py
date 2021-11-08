@@ -224,7 +224,7 @@ class _StreamSetsApiClient:
 
     def wait_for_status(self, pipeline_id: str, status: str):
         tries = 5
-        initial_delay = 3
+        initial_delay = 2
         for i in range(1, tries + 1):
             response = self.get_pipeline_status(pipeline_id)
             if response['status'] == status:
