@@ -50,6 +50,9 @@ def create(pipeline: IPipeline):
     except ApiClientException as e:
         delete(pipeline)
         raise StreamsetsException(str(e))
+    except Exception:
+        delete(pipeline)
+        raise
 
 
 def update(pipeline: IPipeline):
