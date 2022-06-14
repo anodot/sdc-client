@@ -74,57 +74,57 @@ class _AsyncStreamSetsApiClient(_BaseStreamSetsApiClient):
         return await super().get_pipeline_statuses()
 
     @async_endpoint
-    def delete_pipeline(self, pipeline_id: str):
+    async def delete_pipeline(self, pipeline_id: str):
         return await super().delete_pipeline(pipeline_id)
 
     @async_endpoint
-    def get_pipeline_logs(self, pipeline_id: str, severity: str = None):
+    async def get_pipeline_logs(self, pipeline_id: str, severity: str = None):
         return await super().get_pipeline_logs(pipeline_id, severity)
 
     @async_endpoint
-    def get_pipeline(self, pipeline_id: str):
+    async def get_pipeline(self, pipeline_id: str):
         return await super().get_pipeline(pipeline_id)
 
     @async_endpoint
-    def get_pipeline_status(self, pipeline_id: str):
+    async def get_pipeline_status(self, pipeline_id: str):
         return await super().get_pipeline_status(pipeline_id)
 
     @async_endpoint
-    def get_pipeline_history(self, pipeline_id: str):
+    async def get_pipeline_history(self, pipeline_id: str):
         return await super().get_pipeline_history(pipeline_id)
 
     @async_endpoint
-    def get_pipeline_metrics(self, pipeline_id: str):
+    async def get_pipeline_metrics(self, pipeline_id: str):
         return await super().get_pipeline_metrics(pipeline_id)
 
     @async_endpoint
-    def reset_pipeline(self, pipeline_id: str):
+    async def reset_pipeline(self, pipeline_id: str):
         return await super().reset_pipeline(pipeline_id)
 
     @async_endpoint
-    def get_pipeline_offset(self, pipeline_id: str):
+    async def get_pipeline_offset(self, pipeline_id: str):
         return await super().get_pipeline_offset(pipeline_id)
 
     @async_endpoint
-    def post_pipeline_offset(self, pipeline_id: str, offset: dict):
+    async def post_pipeline_offset(self, pipeline_id: str, offset: dict):
         return await super().post_pipeline_offset(pipeline_id, offset)
 
     @async_endpoint
-    def validate(self, pipeline_id: str):
+    async def validate(self, pipeline_id: str):
         return await super().validate(pipeline_id)
 
     @async_endpoint
-    def create_preview(self, pipeline_id: str):
+    async def create_preview(self, pipeline_id: str):
         return await super().create_preview(pipeline_id)
 
     @async_endpoint
-    def get_preview(self, pipeline_id: str, previewer_id: str):
+    async def get_preview(self, pipeline_id: str, previewer_id: str):
         return await super().get_preview(pipeline_id, previewer_id)
 
     @async_endpoint
-    def get_preview_status(self, pipeline_id: str, previewer_id: str):
+    async def get_preview_status(self, pipeline_id: str, previewer_id: str):
         return await super().get_preview_status(pipeline_id, previewer_id)
 
     @async_endpoint
-    def get_jmx(self, query: str):
+    async def get_jmx(self, query: str):
         return await super().get_jmx(query)
