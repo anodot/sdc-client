@@ -314,7 +314,7 @@ def get_jmx(streamsets: IStreamSets, query: str) -> dict:
 def get_jmxes_async(queries: List[Tuple[IStreamSets, str]]) -> List[Dict]:
     async def execute_requests(queries: List[Tuple[IStreamSets, str]]):
         tasks = [asyncio.create_task(
-            _AsyncStreamSetsApiClient().get_jmx(query)
+            _AsyncStreamSetsApiClient(streamset_).get_jmx(query)
         ) for streamset_, query in queries]
         await asyncio.wait(tasks)
         return [task.result() for task in tasks]
