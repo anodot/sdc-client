@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 import json
 import os
@@ -11,13 +11,14 @@ from sdc_client.interfaces import ILogger, IStreamSets
 PREVIEW_TIMEOUT = os.environ.get('STREAMSETS_PREVIEW_TIMEOUT', 30000)
 
 
-class _BaseStreamSetsApiClient:
+class _BaseStreamSetsApiClient(ABC):
     logger = inject.attr(ILogger)
 
     def __init__(self, streamsets_: IStreamSets):
         self.base_url = streamsets_.get_url()
         self.session = self._get_session(streamsets_)
 
+    @abstractmethod
     def _get_session(self, streamsets_: IStreamSets):
         raise NotImplementedError
 

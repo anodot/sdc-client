@@ -5,7 +5,12 @@ import urllib.parse
 import inject
 import requests
 from sdc_client.interfaces import ILogger, IStreamSets
-from sdc_client.base_api_client import _BaseStreamSetsApiClient
+from sdc_client.base_api_client import (
+    _BaseStreamSetsApiClient,
+    ApiClientException,
+    UnauthorizedException,
+    PipelineFreezeException,
+)
 
 MAX_TRIES = 3
 PREVIEW_TIMEOUT = os.environ.get('STREAMSETS_PREVIEW_TIMEOUT', 30000)
@@ -59,7 +64,6 @@ class _StreamSetsApiClient(_BaseStreamSetsApiClient):
         session = requests.Session()
         session.keep_alive = False
         session.auth = (streamsets_.get_username(), streamsets_.get_password())
-        session.headers.update({'X-Requested-By': 'sdc'})
         session.headers.update({'X-Requested-By': 'sdc'})
         return session
 
@@ -206,19 +210,3 @@ class _StreamSetsApiClient(_BaseStreamSetsApiClient):
                 )
             self.logger.info(f"Pipeline `{pipeline_id}` is {response['status']}. Check again after {delay} seconds...")
             time.sleep(delay)
-
-
-class ApiClientException(Exception):
-    def __init__(self, message: str, exception_type: str = ''):
-        self.exception_type = exception_type
-        self.message = message
-
-
-class UnauthorizedException(Exception):
-    def __init__(self, message: str):
-        self.message = message
-        self.exception_type = ''
-
-
-class PipelineFreezeException(Exception):
-    pass
