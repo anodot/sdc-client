@@ -30,4 +30,4 @@ jobs:
         run: python setup.py install
 
       - name: Test
-        run: python tests/test_balancer.py
+        run: python tests/test_*.py
