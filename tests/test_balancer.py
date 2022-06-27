@@ -3,28 +3,7 @@ import inject
 
 from unittest.mock import MagicMock, Mock
 from sdc_client import StreamsetsBalancer, balancer, client, IPipelineProvider
-
-
-class PipelineMock:
-    @staticmethod
-    def get_id():
-        return 'id'
-
-    @staticmethod
-    def set_streamsets(s):
-        pass
-
-    @staticmethod
-    def get_streamsets():
-        o = Mock()
-        o.get_url = MagicMock(return_value='url')
-        return o
-
-
-class StreamSetsMock:
-    @staticmethod
-    def get_url():
-        return 'url'
+from tests.conftest import StreamSetsMock, PipelineMock
 
 
 class TestStreamSetsBalancer(unittest.TestCase):

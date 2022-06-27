@@ -1,11 +1,8 @@
 from abc import abstractmethod, ABC
 
-import json
 import os
-import time
 import urllib.parse
 import inject
-import requests
 from sdc_client.interfaces import ILogger, IStreamSets
 
 PREVIEW_TIMEOUT = os.environ.get('STREAMSETS_PREVIEW_TIMEOUT', 30000)

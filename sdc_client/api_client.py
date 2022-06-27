@@ -1,10 +1,8 @@
 import json
 import os
 import time
-import urllib.parse
-import inject
 import requests
-from sdc_client.interfaces import ILogger, IStreamSets
+from sdc_client.interfaces import IStreamSets
 from sdc_client.base_api_client import (
     _BaseStreamSetsApiClient,
     ApiClientException,
