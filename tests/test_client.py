@@ -2,10 +2,10 @@ import unittest
 import requests
 import aiohttp
 
+from unittest.mock import MagicMock, AsyncMock
 from sdc_client import client
 from sdc_client.base_api_client import UnauthorizedException
-from tests.conftest import MockResponse, MockAsyncResponse, StreamSetsMock
-from unittest.mock import MagicMock, AsyncMock
+from conftest import MockResponse, MockAsyncResponse, StreamSetsMock
 
 
 class TestGetJMX(unittest.TestCase):

@@ -3,7 +3,7 @@ import inject
 
 from unittest.mock import MagicMock, Mock
 from sdc_client import StreamsetsBalancer, balancer, client, IPipelineProvider
-from tests.conftest import StreamSetsMock, PipelineMock
+from conftest import StreamSetsMock, PipelineMock
 
 
 class TestStreamSetsBalancer(unittest.TestCase):
