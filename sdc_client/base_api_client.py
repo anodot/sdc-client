@@ -118,6 +118,13 @@ class ApiClientException(Exception):
         self.exception_type = exception_type
         self.message = message
 
+    @staticmethod
+    def raise_from_response(response: dict):
+        raise ApiClientException(
+            response['RemoteException']['message'],
+            response['RemoteException']['exception'],
+        )
+
 
 class UnauthorizedException(Exception):
     def __init__(self, message: str):

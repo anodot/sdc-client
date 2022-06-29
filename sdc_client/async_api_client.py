@@ -1,7 +1,8 @@
 import asyncio
 import aiohttp
+import json
 
-from sdc_client.base_api_client import _BaseStreamSetsApiClient, UnauthorizedException
+from sdc_client.base_api_client import _BaseStreamSetsApiClient, UnauthorizedException, ApiClientException
 from sdc_client.interfaces import IStreamSets
 
 
@@ -26,11 +27,20 @@ def async_endpoint(func):
                     asyncio.sleep(2 ** i)
                     continue
                 except aiohttp.ClientResponseError:
-                    if res.status == 401:
-                        raise UnauthorizedException('Unauthorized')
-                    # TODO parse error responce
+                    if res.text:
+                        await _parse_aiohttp_response_errors(res)
             return
     return wrap
+
+
+async def _parse_aiohttp_response_errors(result: aiohttp.ClientResponse):
+    try:
+        response = await result.json()
+    except json.decoder.JSONDecodeError:
+        raise ApiClientException(result.text)
+    if result.status == 401:
+        raise UnauthorizedException('Unauthorized')
+    raise ApiClientException.raise_from_response(response)
 
 
 class _AsyncStreamSetsApiClient(_BaseStreamSetsApiClient):

@@ -39,7 +39,7 @@ def endpoint(func):
     return wrapper
 
 
-def _parse_error_response(result):
+def _parse_error_response(result: requests.Response):
     try:
         response = result.json()
     except json.decoder.JSONDecodeError:
@@ -48,10 +48,7 @@ def _parse_error_response(result):
     if result.status_code == 401:
         raise UnauthorizedException('Unauthorized')
 
-    raise ApiClientException(
-        response['RemoteException']['message'],
-        response['RemoteException']['exception'],
-    )
+    raise ApiClientException.raise_from_response(response)
 
 
 class _StreamSetsApiClient(_BaseStreamSetsApiClient):
