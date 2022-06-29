@@ -22,12 +22,8 @@ class TestGetJMX(unittest.TestCase):
             _text='data',
             status_code=401,
         ))
-        try:
+        with self.assertRaises(UnauthorizedException):
             result = client.get_jmx(StreamSetsMock(), 'query_params_1')
-        except Exception as e:
-            self.assertIsInstance(e, UnauthorizedException)
-        else:
-            raise Exception("Code must raise error for this case")
 
     def test_get_jmx_async_success(self):
         aiohttp.ClientSession.get = AsyncMock(return_value=MockAsyncResponse(
@@ -50,7 +46,5 @@ class TestGetJMX(unittest.TestCase):
             (StreamSetsMock(), 'query_params_1',),
             (StreamSetsMock(), 'query_params_2',),
         ]
-        try:
+        with self.assertRaises(UnauthorizedException):
             result = client.get_jmxes_async(queries=queries)
-        except Exception as e:
-            self.assertIsInstance(e, UnauthorizedException)
