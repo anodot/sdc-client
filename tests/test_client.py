@@ -23,7 +23,7 @@ class TestGetJMX(unittest.TestCase):
             status_code=401,
         ))
         with self.assertRaises(UnauthorizedException):
-            result = client.get_jmx(StreamSetsMock(), 'query_params_1')
+            client.get_jmx(StreamSetsMock(), 'query_params_1')
 
     def test_get_jmx_async_success(self):
         aiohttp.ClientSession.get = AsyncMock(return_value=MockAsyncResponse(
@@ -47,4 +47,4 @@ class TestGetJMX(unittest.TestCase):
             (StreamSetsMock(), 'query_params_2',),
         ]
         with self.assertRaises(UnauthorizedException):
-            result = client.get_jmxes_async(queries=queries)
+            client.get_jmxes_async(queries=queries)
