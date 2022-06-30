@@ -30,4 +30,5 @@ jobs:
         run: python setup.py install
 
       - name: Test
-        run: python tests/test_*.py
+        run: for f in tests/test*.py; do python "$f"; done
+
