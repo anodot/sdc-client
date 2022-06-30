@@ -40,7 +40,7 @@ class TestGetJMX(unittest.TestCase):
     def test_get_jmx_async_unauthorized(self):
         aiohttp.ClientSession.get = AsyncMock(return_value=MockAsyncResponse(
             _text='data',
-            status_code=200
+            status_code=401,
         ))
         queries = [
             (StreamSetsMock(), 'query_params_1',),
