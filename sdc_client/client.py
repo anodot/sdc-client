@@ -2,12 +2,14 @@ import json
 import re
 import time
 import inject
+import asyncio
 
 from enum import Enum
 from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from sdc_client import balancer
 from sdc_client.api_client import _StreamSetsApiClient, ApiClientException, PipelineFreezeException
+from sdc_client.async_api_client import _AsyncStreamSetsApiClient
 from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipeline
 
 _clients: Dict[int, _StreamSetsApiClient] = {}
@@ -307,6 +309,20 @@ def get_pipeline_offset(pipeline: IPipeline) -> Optional[str]:
 
 def get_jmx(streamsets: IStreamSets, query: str) -> dict:
     return _get_client(streamsets).get_jmx(query)
+
+
+def get_jmxes_async(queries: List[Tuple[IStreamSets, str]]) -> List[Dict]:
+    async def execute_requests(queries: List[Tuple[IStreamSets, str]]):
+        tasks = [asyncio.create_task(
+            _AsyncStreamSetsApiClient(streamset_).get_jmx(query)
+        ) for streamset_, query in queries]
+        await asyncio.wait(tasks)
+        return [task.result() for task in tasks]
+    loop = asyncio.new_event_loop()
+    jmxes = loop.run_until_complete(execute_requests(queries))
+    loop.close()
+    return jmxes
+
 
 
 def _format_timestamp(utc_time) -> str:
