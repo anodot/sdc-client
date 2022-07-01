@@ -1,3 +1,4 @@
 aiohttp==3.8.1
-requests==2.25.0
 inject==4.3.1
+requests==2.25.0
+pytest==7.1.2

@@ -2,6 +2,7 @@ import requests
 import aiohttp
 
 from unittest.mock import Mock, MagicMock
+from sdc_client import IPipelineProvider
 
 
 class PipelineMock:
@@ -83,3 +84,16 @@ class MockResponse:
         response = requests.Response()
         response.status_code = self.status_code
         response.raise_for_status()
+
+
+def instance(type_: type):
+    if type_ == IPipelineProvider:
+        pipeline = PipelineMock()
+        pipeline.get_streamsets = MagicMock(return_value=StreamSetsMock())
+        res = [pipeline]
+    else:
+        streamsets = StreamSetsMock()
+        res = [streamsets]
+    mock = Mock()
+    mock.get_all = MagicMock(return_value=res)
+    return mock
