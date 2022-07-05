@@ -13,6 +13,7 @@ from sdc_client.async_api_client import _AsyncStreamSetsApiClient
 from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipeline
 
 _clients: Dict[int, _StreamSetsApiClient] = {}
+_clients_async: Dict[int, _AsyncStreamSetsApiClient] = {}
 
 
 # TODO: pass StreamSets instance as an argument
@@ -22,6 +23,14 @@ def _client(pipeline: IPipeline) -> _StreamSetsApiClient:
     if pipeline.get_streamsets().get_id() not in _clients:
         _clients[pipeline.get_streamsets().get_id()] = _StreamSetsApiClient(pipeline.get_streamsets())
     return _clients[pipeline.get_streamsets().get_id()]
+
+
+def _client_async(pipeline: IPipeline) -> _AsyncStreamSetsApiClient:
+    if not pipeline.get_streamsets():
+        raise StreamsetsException(f'Pipeline `{pipeline.get_id()}` does not belong to any StreamSets')
+    if pipeline.get_streamsets().get_id() not in _clients:
+        _clients_async[pipeline.get_streamsets().get_id()] = _AsyncStreamSetsApiClient(pipeline.get_streamsets())
+    return _clients_async[pipeline.get_streamsets().get_id()]
 
 
 class Severity(Enum):
@@ -65,7 +74,7 @@ def update(pipeline: IPipeline):
             start_pipeline = True
         _update_pipeline(pipeline)
     except ApiClientException as e:
-        raise StreamsetsException(str(e))
+        raise StreamsetsException(str(e)) from e
     if start_pipeline:
         start(pipeline)
 
@@ -323,6 +332,69 @@ def get_jmxes_async(queries: List[Tuple[IStreamSets, str]]) -> List[Dict]:
     loop.close()
     return jmxes
 
+
+async def get_pipeline_status_async(pipelines: List[IPipeline]):
+    return await asyncio.gather(
+        *[_client_async(pipeline).get_pipeline_status(pipeline.get_id()) for pipeline in pipelines],
+    )
+
+
+async def start_async(pipelines: List[IPipeline]):
+    return await asyncio.gather(
+            *[_client_async(pipeline).start_pipeline(pipeline.get_id()) for pipeline in pipelines],
+        )
+
+
+async def stop_async(pipelines: List[IPipeline]):
+    return await asyncio.gather(
+        *[_client_async(pipeline).stop_pipeline(pipeline.get_id()) for pipeline in pipelines],
+    )
+
+
+async def _update_pipelines_async(pipelines: List[IPipeline], set_offset: bool = False):
+    if set_offset:
+        await asyncio.gather(
+            *[_client_async(pipeline).post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset()))
+              for pipeline in pipelines if pipeline.get_offset()],
+        )
+
+    new_configs = [pipeline.get_streamsets_config() for pipeline in pipelines]
+    old_configs = await asyncio.gather(
+        *[_client_async(pipeline).get_pipeline(pipeline.get_id()) for pipeline in pipelines],
+    )
+
+    for config in new_configs:
+        new_uuid = [old_config['uuid'] for old_config in old_configs if config['title'] == old_config['title']][0]
+        config['uuid'] = new_uuid
+
+    return await asyncio.gather(
+        *[_client_async(pipeline).update_pipeline(pipeline.get_id(), config)
+          for pipeline, config in zip(pipelines, new_configs)],
+    )
+
+
+def update_async(pipelines: List[IPipeline]):
+    # get all pipelines statuses
+    pipelines_info = asyncio.run(get_pipeline_status_async(pipelines))
+    pipeline_statuses = {info['pipelineId']: info['status'] for info in pipelines_info}
+
+    # get list of running pipelines
+    pipelines_running = [p for p in pipelines if
+                         pipeline_statuses[p.get_id()] in [IPipeline.STATUS_RUNNING, IPipeline.STATUS_RETRY]]
+
+    # stop running pipelines
+    pipelines_stopped = asyncio.run(stop_async(pipelines_running))
+    # TODO check exception here
+    # if pipelines_stopped:
+    #     print("aaa")
+    #     for pipeline in pipelines:
+    #         force_stop(pipeline)
+
+    # actual update
+    asyncio.run(_update_pipelines_async(pipelines))
+
+    # run previously stopped pipelines
+    asyncio.run(start_async(pipelines_running))
 
 
 def _format_timestamp(utc_time) -> str:
