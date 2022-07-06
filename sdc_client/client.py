@@ -351,6 +351,18 @@ async def stop_async(pipelines: List[IPipeline]):
     )
 
 
+async def delete_async(pipelines: List[IPipeline]):
+    return await asyncio.gather(
+            *[_client_async(pipeline).delete_pipeline(pipeline.get_id()) for pipeline in pipelines],
+        )
+
+
+async def create_async(pipelines: List[IPipeline]):
+    return await asyncio.gather(
+            *[_client_async(pipeline).create_pipeline(pipeline.get_id()) for pipeline in pipelines],
+        )
+
+
 async def _update_pipelines_async(pipelines: List[IPipeline], set_offset: bool = False):
     if set_offset:
         await asyncio.gather(
@@ -373,14 +385,13 @@ async def _update_pipelines_async(pipelines: List[IPipeline], set_offset: bool =
     )
 
 
-def update_async(pipelines: List[IPipeline]):
+def stop_running(pipelines: List[IPipeline]) -> List[IPipeline]:
     # get all pipelines statuses
     pipelines_info = asyncio.run(get_pipeline_status_async(pipelines))
     pipeline_statuses = {info['pipelineId']: info['status'] for info in pipelines_info}
 
     # get list of running pipelines
-    pipelines_running = [p for p in pipelines if
-                         pipeline_statuses[p.get_id()] in [IPipeline.STATUS_RUNNING, IPipeline.STATUS_RETRY]]
+    pipelines_running = [p for p in pipelines if pipeline_statuses[p.get_id()] in [IPipeline.STATUS_RUNNING, IPipeline.STATUS_RETRY]]
 
     # stop running pipelines
     pipelines_stopped = asyncio.run(stop_async(pipelines_running))
@@ -390,10 +401,20 @@ def update_async(pipelines: List[IPipeline]):
     #     for pipeline in pipelines:
     #         force_stop(pipeline)
 
-    # actual update
-    asyncio.run(_update_pipelines_async(pipelines))
+    return pipelines_running
 
-    # run previously stopped pipelines
+
+def update_async(pipelines: List[IPipeline]):
+    pipelines_running = stop_running(pipelines)
+    asyncio.run(_update_pipelines_async(pipelines))
+    asyncio.run(start_async(pipelines_running))
+
+
+def move_to_streamsets_async(rebalance_map: Dict[IPipeline, IStreamSets]):
+    pipelines = list(rebalance_map)
+    pipelines_running = stop_running(pipelines)
+    asyncio.run(delete_async(pipelines))
+    asyncio.run(create_async(pipelines_running))
     asyncio.run(start_async(pipelines_running))
 
 
