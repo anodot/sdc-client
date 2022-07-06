@@ -20,7 +20,7 @@ def async_endpoint(func):
                     res = await func(*args, **kwargs)
                     res.raise_for_status()
                     if res.text:
-                        return await res.json()
+                        return await res.json(content_type=None)
                 except aiohttp.ClientConnectionError:
                     if i == MAX_TRIES - 1:
                         raise
