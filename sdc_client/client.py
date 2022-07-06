@@ -28,7 +28,7 @@ def _client(pipeline: IPipeline) -> _StreamSetsApiClient:
 def _client_async(pipeline: IPipeline) -> _AsyncStreamSetsApiClient:
     if not pipeline.get_streamsets():
         raise StreamsetsException(f'Pipeline `{pipeline.get_id()}` does not belong to any StreamSets')
-    if pipeline.get_streamsets().get_id() not in _clients:
+    if pipeline.get_streamsets().get_id() not in _clients_async:
         _clients_async[pipeline.get_streamsets().get_id()] = _AsyncStreamSetsApiClient(pipeline.get_streamsets())
     return _clients_async[pipeline.get_streamsets().get_id()]
 
@@ -414,7 +414,9 @@ def move_to_streamsets_async(rebalance_map: Dict[IPipeline, IStreamSets]):
     pipelines = list(rebalance_map)
     pipelines_running = stop_running(pipelines)
     asyncio.run(delete_async(pipelines))
-    asyncio.run(create_async(pipelines_running))
+    for pipeline in rebalance_map:
+        pipeline.set_streamsets(rebalance_map[pipeline])
+    asyncio.run(create_async(pipelines))
     asyncio.run(start_async(pipelines_running))
 
 

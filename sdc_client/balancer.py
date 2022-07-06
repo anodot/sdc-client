@@ -38,9 +38,8 @@ class StreamsetsBalancer:
         # actual move
         client.move_to_streamsets_async(rebalance_map)
 
-        # save pipeline with new streamsetes
+        # save pipeline with new streamsets
         for pipeline in rebalance_map:
-            pipeline.set_streamsets(rebalance_map[pipeline])
             self.pipeline_provider.save(pipeline)
         self.streamsets_pipelines = streamsets_pipelines.copy()
 
