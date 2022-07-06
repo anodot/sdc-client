@@ -18,15 +18,15 @@ class TestStreamSetsBalancer(unittest.TestCase):
         self.balancer.pipeline_provider.save = Mock()
 
     def test_balanced(self):
-        assert self.balancer.is_balanced()
+        assert self.balancer.is_balanced(self.balancer.streamsets_pipelines)
 
     def test_balanced_2(self):
         self.balancer.streamsets_pipelines = {1: [Mock()], 2: [Mock()], 3: [Mock()]}
-        assert self.balancer.is_balanced()
+        assert self.balancer.is_balanced(self.balancer.streamsets_pipelines)
 
     def test_not_balanced(self):
         self.balancer.streamsets_pipelines = {1: [Mock(), Mock()], 2: []}
-        assert not self.balancer.is_balanced()
+        assert not self.balancer.is_balanced(self.balancer.streamsets_pipelines)
 
     def test_not_balanced_2(self):
         self.balancer.streamsets_pipelines = {
@@ -34,7 +34,7 @@ class TestStreamSetsBalancer(unittest.TestCase):
             2: [Mock(), Mock()],
             3: [],
         }
-        assert not self.balancer.is_balanced()
+        assert not self.balancer.is_balanced(self.balancer.streamsets_pipelines)
 
     def test_balance(self):
         s1 = StreamSetsMock()
