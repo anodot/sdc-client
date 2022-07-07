@@ -14,22 +14,21 @@ def async_endpoint(func):
     logs errors and returns json response
     """
     async def wrap(*args, **kwargs):
-        async with args[0].session:
-            for i in range(MAX_TRIES):
-                try:
-                    res = await func(*args, **kwargs)
-                    res.raise_for_status()
-                    if res.text:
-                        return await res.json()
-                except aiohttp.ClientConnectionError:
-                    if i == MAX_TRIES - 1:
-                        raise
-                    asyncio.sleep(2 ** i)
-                    continue
-                except aiohttp.ClientResponseError:
-                    if res.text:
-                        await _parse_aiohttp_response_errors(res)
-            return
+        for i in range(MAX_TRIES):
+            try:
+                res = await func(*args, **kwargs)
+                res.raise_for_status()
+                if res.text:
+                    return await res.json()
+            except aiohttp.ClientConnectionError:
+                if i == MAX_TRIES - 1:
+                    raise
+                asyncio.sleep(2 ** i)
+                continue
+            except aiohttp.ClientResponseError:
+                if res.text:
+                    await _parse_aiohttp_response_errors(res)
+        return
     return wrap
 
 
