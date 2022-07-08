@@ -2,6 +2,7 @@ import asyncio
 import aiohttp
 import json
 
+from typing import List, Dict
 from sdc_client.base_api_client import _BaseStreamSetsApiClient, UnauthorizedException, ApiClientException
 from sdc_client.interfaces import IStreamSets
 
@@ -40,6 +41,22 @@ async def _parse_aiohttp_response_errors(result: aiohttp.ClientResponse):
     if result.status == 401:
         raise UnauthorizedException('Unauthorized')
     raise ApiClientException.raise_from_response(response)
+
+
+class _AsyncClientsManager:
+    def __init__(self, streamsets_: List[IStreamSets]):
+        self.streamsets_ = streamsets_
+        self.clients: Dict[IStreamSets, _AsyncStreamSetsApiClient] = dict()
+        for streamset_ in self.streamsets_:
+            self.clients[streamset_] = _AsyncStreamSetsApiClient(streamset_)
+
+    async def __aexit__(self, exc_type, exc, tb):
+        for client in self.clients.values():
+            await client.session.connector.close()
+            await client.session.close()
+
+    async def __aenter__(self):
+        return self
 
 
 class _AsyncStreamSetsApiClient(_BaseStreamSetsApiClient):

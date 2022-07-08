@@ -9,18 +9,10 @@ from datetime import datetime
 from typing import Optional, List, Dict, Tuple
 from sdc_client import balancer
 from sdc_client.api_client import _StreamSetsApiClient, ApiClientException, PipelineFreezeException
-from sdc_client.async_api_client import _AsyncStreamSetsApiClient
+from sdc_client.async_api_client import _AsyncClientsManager
 from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipeline
 
 _clients: Dict[int, _StreamSetsApiClient] = {}
-
-
-class Query:
-    def __init__(self, id_, streamset_, params):
-        self.id = id_
-        self.streamset = streamset_
-        self.params = params
-        self.result = None
 
 
 # TODO: pass StreamSets instance as an argument
@@ -319,43 +311,16 @@ def get_jmx(streamsets: IStreamSets, query: str) -> dict:
     return _get_client(streamsets).get_jmx(query)
 
 
-def get_jmxes_async(queries: List):
-    async def execute_requests_for_client(client_queries: List[Query]):
-        client = _AsyncStreamSetsApiClient(client_queries[0].streamset)
-        async with client.session:
+def get_jmxes_async(queries: List[IStreamSets, str]):
+    async def execute_requests(queries_: List[IStreamSets, str]):
+        streamsets_ = set([streamset_ for streamset_, _ in queries_])
+        async with _AsyncClientsManager(streamsets_) as manager:
             tasks = [asyncio.create_task(
-                client.get_jmx(query.params)
-            ) for query in client_queries]
+                manager.clients[streamset_].get_jmx(query)
+            ) for streamset_, query in queries_]
             await asyncio.wait(tasks)
-            for query, task in zip(client_queries, tasks):
-                query.result = task.result()
-            return client_queries
-
-    async def get_jmx_for_all_streamsets(queries_: List[Query]):
-        streamsets_ = set([c.streamset for c in queries_])
-        tasks = []
-        for streamset_ in streamsets_:
-            client_requests = list(filter(lambda query: query.streamset == streamset_, queries_))
-            tasks.append(asyncio.create_task(execute_requests_for_client(client_requests)))
-        tasks = await asyncio.wait(tasks)
-        return tasks[0]
-    # Create queries
-    queries_list = list()
-    for index, (streamset_, params) in enumerate(queries):
-        queries_list.append(
-            Query(id_=index, streamset_=streamset_, params=params)
-        )
-    # Execute requests async
-    loop = asyncio.new_event_loop()
-    result = loop.run_until_complete(get_jmx_for_all_streamsets(queries_list))
-    loop.close()
-    # Extract jmxes and sort to origin order
-    jmxes: List[Query] = list()
-    [jmxes.extend(task.result()) for task in result]
-    jmxes = sorted(jmxes, key=lambda query: query.id)
-    return list(map(lambda x: x.result, jmxes))
-
-
+        return [task.result() for task in tasks]
+    return asyncio.run(execute_requests(queries))
 
 
 def _format_timestamp(utc_time) -> str:
