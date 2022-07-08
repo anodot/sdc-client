@@ -311,7 +311,7 @@ def get_jmx(streamsets: IStreamSets, query: str) -> dict:
     return _get_client(streamsets).get_jmx(query)
 
 
-def get_jmxes_async(queries: List[Tuple[IStreamSets, str]]):
+def get_jmxes_async(queries: List[Tuple[IStreamSets, str]]) -> List[Dict]:
     async def execute_requests(queries_: List[Tuple[IStreamSets, str]]):
         streamsets_ = set([streamset_ for streamset_, _ in queries_])
         async with _AsyncClientsManager(streamsets_) as manager:

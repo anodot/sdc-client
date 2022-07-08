@@ -45,7 +45,7 @@ async def _parse_aiohttp_response_errors(result: aiohttp.ClientResponse):
 
 class _AsyncClientsManager:
     def __init__(self, streamsets_: List[IStreamSets]):
-        self.streamsets_ = streamsets_
+        self.streamsets_: List[IStreamSets] = streamsets_
         self.clients: Dict[IStreamSets, _AsyncStreamSetsApiClient] = dict()
         for streamset_ in self.streamsets_:
             self.clients[streamset_] = _AsyncStreamSetsApiClient(streamset_)
