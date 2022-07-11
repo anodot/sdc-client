@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 import json
+import time
 
 from typing import List, Dict
 from sdc_client.base_api_client import _BaseStreamSetsApiClient, UnauthorizedException, ApiClientException
@@ -24,7 +25,7 @@ def async_endpoint(func):
             except aiohttp.ClientConnectionError:
                 if i == MAX_TRIES - 1:
                     raise
-                asyncio.sleep(2 ** i)
+                await asyncio.sleep(2 ** i)
                 continue
             except aiohttp.ClientResponseError:
                 if res.text:
@@ -44,11 +45,10 @@ async def _parse_aiohttp_response_errors(result: aiohttp.ClientResponse):
 
 
 class _AsyncClientsManager:
-    def __init__(self, streamsets_: List[IStreamSets]):
-        self.streamsets_: List[IStreamSets] = streamsets_
-        self.clients: Dict[IStreamSets, _AsyncStreamSetsApiClient] = dict()
-        for streamset_ in self.streamsets_:
-            self.clients[streamset_] = _AsyncStreamSetsApiClient(streamset_)
+    def __init__(self, clients: List["_AsyncStreamSetsApiClient"]):
+        self.clients: Dict[IStreamSets, _AsyncStreamSetsApiClient] = {}
+        for client in clients:
+            self.clients[client.streamset] = client
 
     async def __aexit__(self, exc_type, exc, tb):
         for client in self.clients.values():
@@ -56,12 +56,15 @@ class _AsyncClientsManager:
             await client.session.close()
 
     async def __aenter__(self):
+        for streamset_ in self.clients:
+            self.clients[streamset_].session = self.clients[streamset_]._get_session(streamset_)
         return self
 
 
 class _AsyncStreamSetsApiClient(_BaseStreamSetsApiClient):
     def __init__(self, streamsets_: IStreamSets):
         super().__init__(streamsets_)
+        self.session = None
 
     def _get_session(self, streamsets_: IStreamSets):
         session = aiohttp.ClientSession(

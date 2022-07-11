@@ -1,5 +1,6 @@
 import requests
 import aiohttp
+from random import randint
 
 from unittest.mock import Mock, MagicMock
 from sdc_client import IPipelineProvider
@@ -22,6 +23,9 @@ class PipelineMock:
 
 
 class StreamSetsMock:
+    def __init__(self):
+        self.id = randint(0, 1000)
+
     @staticmethod
     def get_url():
         return 'url'
@@ -34,9 +38,9 @@ class StreamSetsMock:
     def get_password():
         return 'admin'
 
-    @staticmethod
-    def get_id():
-        return 1
+    # @staticmethod
+    def get_id(self):
+        return self.id
 
 
 class MockAsyncResponse:

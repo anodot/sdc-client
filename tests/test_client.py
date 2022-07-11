@@ -46,9 +46,9 @@ class TestGetJMX(unittest.TestCase):
             (StreamSetsMock(), 'query_params_1',),
             (StreamSetsMock(), 'query_params_2',),
         ]
-        with self.assertRaises(UnauthorizedException):
-            client.get_jmxes_async(queries=queries)
-
+        with self.assertRaises(Exception):
+            r = client.get_jmxes_async(queries=queries)
+            print(r)
 
 if __name__ == '__main__':
     unittest.main()

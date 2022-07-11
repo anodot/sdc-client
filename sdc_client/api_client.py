@@ -54,6 +54,7 @@ def _parse_error_response(result: requests.Response):
 class _StreamSetsApiClient(_BaseStreamSetsApiClient):
     def __init__(self, streamsets_: IStreamSets):
         super().__init__(streamsets_)
+        self.session = self._get_session(streamsets_)
 
     def _get_session(self, streamsets_: IStreamSets):
         session = requests.Session()
