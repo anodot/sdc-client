@@ -49,5 +49,6 @@ class TestGetJMX(unittest.TestCase):
         with self.assertRaises(UnauthorizedException):
             client.get_jmxes_async(queries=queries)
 
+
 if __name__ == '__main__':
     unittest.main()

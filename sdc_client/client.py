@@ -46,7 +46,7 @@ def _get_client(streamsets: IStreamSets) -> _StreamSetsApiClient:
     return _clients[streamsets.get_id()]
 
 
-def _get_async_client(streamsets: IStreamSets) -> _StreamSetsApiClient:
+def _get_async_client(streamsets: IStreamSets) -> _AsyncStreamSetsApiClient:
     global _clients_async
     if streamsets.get_id() not in _clients_async:
         _clients_async[streamsets.get_id()] = _AsyncStreamSetsApiClient(streamsets)
@@ -329,8 +329,7 @@ def get_jmx(streamsets: IStreamSets, query: str) -> dict:
 
 def get_jmxes_async(queries: List[Tuple[IStreamSets, str]], return_exceptions=False) -> List[Dict]:
     async def execute_requests(queries_: List[Tuple[IStreamSets, str]]):
-        clients = [_get_async_client(ss) for ss
-                in set([ss for ss, _ in queries_])]
+        clients = [_get_async_client(ss) for ss in {ss for ss, _ in queries_}]
         async with _AsyncClientsManager(clients) as manager:
             return await asyncio.gather(
                 *[asyncio.create_task(manager.clients[streamset_].get_jmx(query)) for streamset_, query in queries],
