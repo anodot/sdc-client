@@ -45,9 +45,9 @@ async def _parse_aiohttp_response_errors(result: aiohttp.ClientResponse):
 
 class _AsyncClientsManager:
     def __init__(self, clients: List["_AsyncStreamSetsApiClient"]):
-        self.clients: Dict[IStreamSets, _AsyncStreamSetsApiClient] = {}
+        self.clients: Dict[int, _AsyncStreamSetsApiClient] = {}
         for client in clients:
-            self.clients[client.streamset] = client
+            self.clients[client.streamset.get_id()] = client
 
     async def __aexit__(self, exc_type, exc, tb):
         for client in self.clients.values():
@@ -55,8 +55,8 @@ class _AsyncClientsManager:
             await client.session.close()
 
     async def __aenter__(self):
-        for streamset_ in self.clients:
-            self.clients[streamset_].session = self.clients[streamset_]._get_session(streamset_)
+        for streamset_id in self.clients:
+            self.clients[streamset_id].session = self.clients[streamset_id]._get_session()
         return self
 
 
@@ -65,11 +65,11 @@ class _AsyncStreamSetsApiClient(_BaseStreamSetsApiClient):
         super().__init__(streamsets_)
         self.session = None
 
-    def _get_session(self, streamsets_: IStreamSets):
+    def _get_session(self):
         session = aiohttp.ClientSession(
             auth=aiohttp.BasicAuth(
-                login=streamsets_.get_username(),
-                password=streamsets_.get_password())
+                login=self.streamset.get_username(),
+                password=self.streamset.get_password())
         )
         session.headers.update({'X-Requested-By': 'sdc'})
         return session

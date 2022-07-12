@@ -332,7 +332,7 @@ def get_jmxes_async(queries: List[Tuple[IStreamSets, str]], return_exceptions=Fa
         clients = [_get_async_client(ss) for ss in {ss for ss, _ in queries_}]
         async with _AsyncClientsManager(clients) as manager:
             return await asyncio.gather(
-                *[asyncio.create_task(manager.clients[streamset_].get_jmx(query)) for streamset_, query in queries],
+                *[asyncio.create_task(manager.clients[streamset_.get_id()].get_jmx(query)) for streamset_, query in queries],
                 return_exceptions=return_exceptions
             )
     return asyncio.run(execute_requests(queries))
