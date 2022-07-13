@@ -388,51 +388,62 @@ async def create_async(pipelines: List[IPipeline]):
         )
 
 
-async def _update_pipelines_async(pipelines: List[IPipeline], set_offset: bool = False):
-    if set_offset:
-        await asyncio.gather(
-            *[_client_async(pipeline).post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset()))
+async def set_offsets_async(pipelines: List[IPipeline]):
+    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    async with _AsyncClientsManager(clients) as manager:
+        return await asyncio.gather(
+            *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset())))
               for pipeline in pipelines if pipeline.get_offset()],
+            return_exceptions=True
         )
 
-    new_configs = [pipeline.get_streamsets_config() for pipeline in pipelines]
-    old_configs = await asyncio.gather(
-        *[_client_async(pipeline).get_pipeline(pipeline.get_id()) for pipeline in pipelines],
-    )
 
+async def get_pipelines_async(pipelines: List[IPipeline]):
+    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    async with _AsyncClientsManager(clients) as manager:
+        return await asyncio.gather(
+            *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].get_pipeline(pipeline.get_id()))
+              for pipeline in pipelines],
+            return_exceptions=True
+        )
+
+
+async def update_pipeline_async(pipelines: List[IPipeline], configs: List[Dict]):
+    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    async with _AsyncClientsManager(clients) as manager:
+        return await asyncio.gather(
+            *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].update_pipeline(pipeline.get_id(), config))
+              for pipeline, config in zip(pipelines, configs)],
+            return_exceptions=True
+        )
+
+
+def _update_pipelines_async(pipelines: List[IPipeline], set_offset: bool = False):
+    if set_offset:
+        asyncio.run(set_offsets_async(pipelines))
+    new_configs = [pipeline.get_streamsets_config() for pipeline in pipelines]
+    old_configs = asyncio.run(get_pipelines_async(pipelines))
     for config in new_configs:
         new_uuid = [old_config['uuid'] for old_config in old_configs if config['title'] == old_config['title']][0]
         config['uuid'] = new_uuid
-
-    return await asyncio.gather(
-        *[_client_async(pipeline).update_pipeline(pipeline.get_id(), config)
-          for pipeline, config in zip(pipelines, new_configs)],
-    )
+    asyncio.run(update_pipeline_async(pipelines, new_configs))
 
 
 def _stop_running(pipelines: List[IPipeline]) -> List[IPipeline]:
-    # get all pipelines statuses
     pipelines_info = asyncio.run(get_pipeline_statuses_async(pipelines))
-    # pipeline_statuses = {name: info['status'] for name, info in pipelines_info[0].items() if name}
     pipeline_statuses = {pipeline.get_id(): pipelines_info[0][pipeline.get_id()]['status'] for pipeline in pipelines}
-
-    # get list of running pipelines
     pipelines_running = [p for p in pipelines if pipeline_statuses[p.get_id()] in [IPipeline.STATUS_RUNNING, IPipeline.STATUS_RETRY]]
-
-    # stop running pipelines
     pipelines_stopped = asyncio.run(stop_async(pipelines_running))
     # TODO check exception here
     # if pipelines_stopped:
-    #     print("aaa")
     #     for pipeline in pipelines:
     #         force_stop(pipeline)
-
     return pipelines_running
 
 
 def update_async(pipelines: List[IPipeline]):
     pipelines_running = _stop_running(pipelines)
-    asyncio.run(_update_pipelines_async(pipelines))
+    _update_pipelines_async(pipelines)
     asyncio.run(start_async(pipelines_running))
 
 
@@ -443,6 +454,7 @@ def move_to_streamsets_async(rebalance_map: Dict[IPipeline, IStreamSets]):
     for pipeline_, streamsets_ in rebalance_map.items():
         pipeline_.set_streamsets(streamsets_)
     asyncio.run(create_async(pipelines))
+    _update_pipelines_async(pipelines, set_offset=True)
     asyncio.run(start_async(pipelines_running))
 
 
