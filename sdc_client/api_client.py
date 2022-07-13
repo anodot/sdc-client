@@ -54,11 +54,12 @@ def _parse_error_response(result: requests.Response):
 class _StreamSetsApiClient(_BaseStreamSetsApiClient):
     def __init__(self, streamsets_: IStreamSets):
         super().__init__(streamsets_)
+        self.session = self._get_session()
 
-    def _get_session(self, streamsets_: IStreamSets):
+    def _get_session(self):
         session = requests.Session()
         session.keep_alive = False
-        session.auth = (streamsets_.get_username(), streamsets_.get_password())
+        session.auth = (self.streamset.get_username(), self.streamset.get_password())
         session.headers.update({'X-Requested-By': 'sdc'})
         return session
 

@@ -13,7 +13,7 @@ class _BaseStreamSetsApiClient(ABC):
 
     def __init__(self, streamsets_: IStreamSets):
         self.base_url = streamsets_.get_url()
-        self.session = self._get_session(streamsets_)
+        self.streamset = streamsets_
 
     @abstractmethod
     def _get_session(self, streamsets_: IStreamSets):
