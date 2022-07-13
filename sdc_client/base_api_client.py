@@ -112,6 +112,12 @@ class _BaseStreamSetsApiClient(ABC):
     def get_jmx(self, query: str):
         return self.session.get(self._build_url('system', 'jmx'), params={'qry': query})
 
+    def get_pipeline_errors(self, pipeline_id: str, stage_name):
+        self.logger.info(f'Get pipeline `{pipeline_id}` errors')
+        return self.session.get(
+            self._build_url('pipeline', pipeline_id, 'errorRecords'),
+            params={'stageInstanceName': stage_name}
+        )
 
 
 class ApiClientException(Exception):
