@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Tuple
 from sdc_client import balancer
 from sdc_client.api_client import _StreamSetsApiClient, ApiClientException, PipelineFreezeException
-from sdc_client.async_api_client import _AsyncStreamSetsApiClient
+from sdc_client.async_api_client import _AsyncClientsManager, _AsyncStreamSetsApiClient
 from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipeline
 
 _clients: Dict[int, _StreamSetsApiClient] = {}
@@ -44,6 +44,13 @@ def _get_client(streamsets: IStreamSets) -> _StreamSetsApiClient:
     if streamsets.get_id() not in _clients:
         _clients[streamsets.get_id()] = _StreamSetsApiClient(streamsets)
     return _clients[streamsets.get_id()]
+
+
+def _get_async_client(streamsets: IStreamSets) -> _AsyncStreamSetsApiClient:
+    global _clients_async
+    if streamsets.get_id() not in _clients_async:
+        _clients_async[streamsets.get_id()] = _AsyncStreamSetsApiClient(streamsets)
+    return _clients_async[streamsets.get_id()]
 
 
 def create(pipeline: IPipeline):
@@ -320,18 +327,15 @@ def get_jmx(streamsets: IStreamSets, query: str) -> dict:
     return _get_client(streamsets).get_jmx(query)
 
 
-def get_jmxes_async(queries: List[Tuple[IStreamSets, str]]) -> List[Dict]:
-    async def execute_requests(queries: List[Tuple[IStreamSets, str]]):
-        tasks = [asyncio.create_task(
-            _AsyncStreamSetsApiClient(streamset_).get_jmx(query)
-        ) for streamset_, query in queries]
-        await asyncio.wait(tasks)
-        return [task.result() for task in tasks]
-    loop = asyncio.new_event_loop()
-    jmxes = loop.run_until_complete(execute_requests(queries))
-    loop.close()
-    return jmxes
-
+def get_jmxes_async(queries: List[Tuple[IStreamSets, str]], return_exceptions=False) -> List[Dict]:
+    async def execute_requests(queries_: List[Tuple[IStreamSets, str]]):
+        clients = [_get_async_client(ss) for ss in {ss for ss, _ in queries_}]
+        async with _AsyncClientsManager(clients) as manager:
+            return await asyncio.gather(
+                *[asyncio.create_task(manager.clients[streamset_.get_id()].get_jmx(query)) for streamset_, query in queries],
+                return_exceptions=return_exceptions
+            )
+    return asyncio.run(execute_requests(queries))
 
 async def get_pipeline_status_async(pipelines: List[IPipeline]):
     return await asyncio.gather(
