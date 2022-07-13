@@ -337,33 +337,54 @@ def get_jmxes_async(queries: List[Tuple[IStreamSets, str]], return_exceptions=Fa
             )
     return asyncio.run(execute_requests(queries))
 
-async def get_pipeline_status_async(pipelines: List[IPipeline]):
-    return await asyncio.gather(
-        *[_client_async(pipeline).get_pipeline_status(pipeline.get_id()) for pipeline in pipelines],
-    )
+
+async def get_pipeline_statuses_async(pipelines: List[IPipeline]):
+    streamsets_ = list({pipeline.get_streamsets() for pipeline in pipelines})
+    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    async with _AsyncClientsManager(clients) as manager:
+        return await asyncio.gather(
+            *[asyncio.create_task(manager.clients[ss.get_id()].get_pipeline_statuses()) for ss in streamsets_],
+            return_exceptions=True
+        )
 
 
 async def start_async(pipelines: List[IPipeline]):
-    return await asyncio.gather(
-            *[_client_async(pipeline).start_pipeline(pipeline.get_id()) for pipeline in pipelines],
+    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    async with _AsyncClientsManager(clients) as manager:
+        return await asyncio.gather(
+            *[asyncio.create_task(manager.clients[pipeline.get_streamsets()].start_pipeline(pipeline.get_id()))
+              for pipeline in pipelines],
+            return_exceptions=True
         )
 
 
 async def stop_async(pipelines: List[IPipeline]):
-    return await asyncio.gather(
-        *[_client_async(pipeline).stop_pipeline(pipeline.get_id()) for pipeline in pipelines],
-    )
+    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    async with _AsyncClientsManager(clients) as manager:
+        return await asyncio.gather(
+            *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].stop_pipeline(pipeline.get_id()))
+              for pipeline in pipelines],
+            return_exceptions=True
+        )
 
 
 async def delete_async(pipelines: List[IPipeline]):
-    return await asyncio.gather(
-            *[_client_async(pipeline).delete_pipeline(pipeline.get_id()) for pipeline in pipelines],
+    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    async with _AsyncClientsManager(clients) as manager:
+        return await asyncio.gather(
+            *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].delete_pipeline(pipeline.get_id()))
+              for pipeline in pipelines],
+            return_exceptions=True
         )
 
 
 async def create_async(pipelines: List[IPipeline]):
-    return await asyncio.gather(
-            *[_client_async(pipeline).create_pipeline(pipeline.get_id()) for pipeline in pipelines],
+    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    async with _AsyncClientsManager(clients) as manager:
+        return await asyncio.gather(
+            *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].create_pipeline(pipeline.get_id()))
+              for pipeline in pipelines],
+            return_exceptions=True
         )
 
 
@@ -389,10 +410,11 @@ async def _update_pipelines_async(pipelines: List[IPipeline], set_offset: bool =
     )
 
 
-def stop_running(pipelines: List[IPipeline]) -> List[IPipeline]:
+def _stop_running(pipelines: List[IPipeline]) -> List[IPipeline]:
     # get all pipelines statuses
-    pipelines_info = asyncio.run(get_pipeline_status_async(pipelines))
-    pipeline_statuses = {info['pipelineId']: info['status'] for info in pipelines_info}
+    pipelines_info = asyncio.run(get_pipeline_statuses_async(pipelines))
+    # pipeline_statuses = {name: info['status'] for name, info in pipelines_info[0].items() if name}
+    pipeline_statuses = {pipeline.get_id(): pipelines_info[0][pipeline.get_id()]['status'] for pipeline in pipelines}
 
     # get list of running pipelines
     pipelines_running = [p for p in pipelines if pipeline_statuses[p.get_id()] in [IPipeline.STATUS_RUNNING, IPipeline.STATUS_RETRY]]
@@ -409,14 +431,14 @@ def stop_running(pipelines: List[IPipeline]) -> List[IPipeline]:
 
 
 def update_async(pipelines: List[IPipeline]):
-    pipelines_running = stop_running(pipelines)
+    pipelines_running = _stop_running(pipelines)
     asyncio.run(_update_pipelines_async(pipelines))
     asyncio.run(start_async(pipelines_running))
 
 
 def move_to_streamsets_async(rebalance_map: Dict[IPipeline, IStreamSets]):
     pipelines = list(rebalance_map)
-    pipelines_running = stop_running(pipelines)
+    pipelines_running = _stop_running(pipelines)
     asyncio.run(delete_async(pipelines))
     for pipeline in rebalance_map:
         pipeline.set_streamsets(rebalance_map[pipeline])
