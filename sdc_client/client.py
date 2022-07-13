@@ -352,7 +352,7 @@ async def start_async(pipelines: List[IPipeline]):
     clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
-            *[asyncio.create_task(manager.clients[pipeline.get_streamsets()].start_pipeline(pipeline.get_id()))
+            *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].start_pipeline(pipeline.get_id()))
               for pipeline in pipelines],
             return_exceptions=True
         )
@@ -440,8 +440,8 @@ def move_to_streamsets_async(rebalance_map: Dict[IPipeline, IStreamSets]):
     pipelines = list(rebalance_map)
     pipelines_running = _stop_running(pipelines)
     asyncio.run(delete_async(pipelines))
-    for pipeline in rebalance_map:
-        pipeline.set_streamsets(rebalance_map[pipeline])
+    for pipeline_, streamsets_ in rebalance_map.items():
+        pipeline_.set_streamsets(streamsets_)
     asyncio.run(create_async(pipelines))
     asyncio.run(start_async(pipelines_running))
 
