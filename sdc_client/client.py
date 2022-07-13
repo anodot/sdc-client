@@ -432,8 +432,10 @@ def _update_pipelines_async(pipelines: List[IPipeline], set_offset: bool = False
 def _stop_running(pipelines: List[IPipeline]) -> List[IPipeline]:
     pipelines_info = asyncio.run(get_pipeline_statuses_async(pipelines))
     pipeline_statuses = {pipeline.get_id(): pipelines_info[0][pipeline.get_id()]['status'] for pipeline in pipelines}
-    pipelines_running = [p for p in pipelines if pipeline_statuses[p.get_id()] in [IPipeline.STATUS_RUNNING, IPipeline.STATUS_RETRY]]
+    pipelines_running = [p for p in pipelines if pipeline_statuses[p.get_id()] in
+                         (IPipeline.STATUS_RUNNING, IPipeline.STATUS_STARTING, IPipeline.STATUS_RETRY)]
     pipelines_stopped = asyncio.run(stop_async(pipelines_running))
+    time.sleep(2)
     # TODO check exception here
     # if pipelines_stopped:
     #     for pipeline in pipelines:
