@@ -33,7 +33,7 @@ class _BaseStreamSetsApiClient(ABC):
 
     def start_pipeline(self, pipeline_id: str):
         self.logger.info(f'Start pipeline `{pipeline_id}`')
-        return self.session.post(self._build_url('pipeline', pipeline_id, 'start'))
+        return self.session.post(self._build_url('pipeline', pipeline_id, 'start'), json={})
 
     def stop_pipeline(self, pipeline_id: str):
         self.logger.info(f'Stop pipeline `{pipeline_id}`')
