@@ -36,8 +36,8 @@ def async_endpoint(func):
 async def _parse_aiohttp_response_errors(result: aiohttp.ClientResponse):
     try:
         response = await result.json()
-    except json.decoder.JSONDecodeError as e:
-        raise ApiClientException(result.text) from e
+    except json.decoder.JSONDecodeError:
+        raise ApiClientException(result.text)
     if result.status == 401:
         raise UnauthorizedException('Unauthorized')
     raise ApiClientException.raise_from_response(response)

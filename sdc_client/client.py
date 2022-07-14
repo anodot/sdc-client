@@ -81,7 +81,7 @@ def update(pipeline: IPipeline):
             start_pipeline = True
         _update_pipeline(pipeline)
     except ApiClientException as e:
-        raise StreamsetsException(str(e)) from e
+        raise StreamsetsException(str(e))
     if start_pipeline:
         start(pipeline)
 
