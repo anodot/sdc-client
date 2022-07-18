@@ -45,7 +45,9 @@ async def _parse_aiohttp_response_errors(result: aiohttp.ClientResponse):
 
 class _AsyncClientsManager:
     def __init__(self, clients: List['_AsyncStreamSetsApiClient']):
-        self.clients: Dict[int, _AsyncStreamSetsApiClient] = {client.streamsets.get_id(): client for client in clients}
+        self.clients: Dict[int, _AsyncStreamSetsApiClient] = {}
+        for client in clients:
+            self.clients[client.streamsets.get_id()] = client
 
     async def __aexit__(self, exc_type, exc, tb):
         for client in self.clients.values():
