@@ -53,6 +53,10 @@ def _get_async_client(streamsets: IStreamSets) -> _AsyncStreamSetsApiClient:
     return _clients_async[streamsets.get_id()]
 
 
+def _get_async_client_from_pipelines(pipelines: List[IPipeline]) -> List[_AsyncStreamSetsApiClient]:
+    return [_get_async_client(streamsets) for streamsets in {pipeline.get_streamsets() for pipeline in pipelines}]
+
+
 def create(pipeline: IPipeline):
     # todo remove this if check and make streamsets mandatory after that fix todos above
     if not pipeline.get_streamsets():
@@ -340,7 +344,7 @@ def get_jmxes_async(queries: List[Tuple[IStreamSets, str]], return_exceptions=Fa
 
 async def get_pipeline_statuses_async(pipelines: List[IPipeline], return_exceptions=False):
     streamsets_ = list({pipeline.get_streamsets() for pipeline in pipelines})
-    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    clients = [_get_async_client(ss) for ss in streamsets_]
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
             *[asyncio.create_task(manager.clients[ss.get_id()].get_pipeline_statuses()) for ss in streamsets_],
@@ -349,7 +353,7 @@ async def get_pipeline_statuses_async(pipelines: List[IPipeline], return_excepti
 
 
 async def start_async(pipelines: List[IPipeline], return_exceptions=False):
-    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    clients = _get_async_client_from_pipelines(pipelines)
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
             *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].start_pipeline(pipeline.get_id()))
@@ -359,7 +363,7 @@ async def start_async(pipelines: List[IPipeline], return_exceptions=False):
 
 
 async def stop_async(pipelines: List[IPipeline], return_exceptions=False):
-    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    clients = _get_async_client_from_pipelines(pipelines)
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
             *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].stop_pipeline(pipeline.get_id()))
@@ -369,7 +373,7 @@ async def stop_async(pipelines: List[IPipeline], return_exceptions=False):
 
 
 async def delete_async(pipelines: List[IPipeline], return_exceptions=False):
-    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    clients = _get_async_client_from_pipelines(pipelines)
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
             *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].delete_pipeline(pipeline.get_id()))
@@ -379,7 +383,7 @@ async def delete_async(pipelines: List[IPipeline], return_exceptions=False):
 
 
 async def create_async(pipelines: List[IPipeline], return_exceptions=False):
-    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    clients = _get_async_client_from_pipelines(pipelines)
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
             *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].create_pipeline(pipeline.get_id()))
@@ -389,7 +393,7 @@ async def create_async(pipelines: List[IPipeline], return_exceptions=False):
 
 
 async def set_offsets_async(pipelines: List[IPipeline], return_exceptions=False):
-    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    clients = _get_async_client_from_pipelines(pipelines)
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
             *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].post_pipeline_offset(pipeline.get_id(), json.loads(pipeline.get_offset())))
@@ -399,7 +403,7 @@ async def set_offsets_async(pipelines: List[IPipeline], return_exceptions=False)
 
 
 async def get_pipelines_async(pipelines: List[IPipeline], return_exceptions=False):
-    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    clients = _get_async_client_from_pipelines(pipelines)
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
             *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].get_pipeline(pipeline.get_id()))
@@ -409,7 +413,7 @@ async def get_pipelines_async(pipelines: List[IPipeline], return_exceptions=Fals
 
 
 async def update_pipeline_async(pipelines: List[IPipeline], configs: List[Dict], return_exceptions=False):
-    clients = [_get_async_client(ss) for ss in {p.get_streamsets() for p in pipelines}]
+    clients = _get_async_client_from_pipelines(pipelines)
     async with _AsyncClientsManager(clients) as manager:
         return await asyncio.gather(
             *[asyncio.create_task(manager.clients[pipeline.get_streamsets().get_id()].update_pipeline(pipeline.get_id(), config))
