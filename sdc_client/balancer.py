@@ -12,36 +12,12 @@ class StreamsetsBalancer:
     def __init__(self):
         self.streamsets_pipelines: Dict[IStreamSets, List[IPipeline]] = get_streamsets_pipelines()
 
-    def balance(self, asynchronous: bool = False):
-        if not asynchronous:
-            self._perform_rebalance()
-        else:
-            self._perform_rebalance_async()
-
-    def _perform_rebalance(self):
+    def balance(self):
         while not self.is_balanced(self.streamsets_pipelines):
             pipeline = self.streamsets_pipelines[most_loaded_streamsets(self.streamsets_pipelines)].pop()
             to_streamsets = least_loaded_streamsets(self.streamsets_pipelines)
             self._move(pipeline, to_streamsets)
             self.logger.info(f'Moved `{pipeline.get_id()}` to `{pipeline.get_streamsets().get_url()}`')
-
-    def _perform_rebalance_async(self):
-        # prepare rebalance_map
-        streamsets_pipelines = self.streamsets_pipelines.copy()
-        rebalance_map = {}
-        while not self.is_balanced(streamsets_pipelines):
-            pipeline = streamsets_pipelines[most_loaded_streamsets(streamsets_pipelines)].pop()
-            to_streamsets = least_loaded_streamsets(streamsets_pipelines)
-            streamsets_pipelines[to_streamsets].append(pipeline)
-            rebalance_map[pipeline] = to_streamsets
-
-        # actual move
-        client.move_to_streamsets_async(rebalance_map)
-
-        # save pipeline with new streamsets
-        for pipeline in rebalance_map:
-            self.pipeline_provider.save(pipeline)
-        self.streamsets_pipelines = streamsets_pipelines.copy()
 
     def unload_streamsets(self, streamsets: IStreamSets):
         for pipeline in self.streamsets_pipelines.pop(streamsets):
@@ -74,8 +50,7 @@ def get_streamsets_pipelines() -> Dict[IStreamSets, List[IPipeline]]:
     pipelines = inject.instance(IPipelineProvider).get_all()
     sp = {}
     for pipeline_ in pipelines:
-        streamsets = pipeline_.get_streamsets()
-        if streamsets:
+        if streamsets := pipeline_.get_streamsets():
             if streamsets not in sp:
                 sp[streamsets] = []
             sp[streamsets].append(pipeline_)
