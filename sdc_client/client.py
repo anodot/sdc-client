@@ -2,14 +2,12 @@ import json
 import re
 import time
 import inject
-import asyncio
 
 from enum import Enum
 from datetime import datetime
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict
 from sdc_client import balancer
 from sdc_client.api_client import _StreamSetsApiClient, ApiClientException, PipelineFreezeException
-# from sdc_client.async_api_client import _AsyncClientsManager, _AsyncStreamSetsApiClient
 from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipeline
 
 _clients: Dict[int, _StreamSetsApiClient] = {}
