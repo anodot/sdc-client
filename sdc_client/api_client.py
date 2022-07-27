@@ -59,7 +59,7 @@ class _StreamSetsApiClient(_BaseStreamSetsApiClient):
     def _get_session(self):
         session = requests.Session()
         session.keep_alive = False
-        session.auth = (self.streamset.get_username(), self.streamset.get_password())
+        session.auth = (self.streamsets.get_username(), self.streamsets.get_password())
         session.headers.update({'X-Requested-By': 'sdc'})
         return session
 

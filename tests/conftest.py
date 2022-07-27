@@ -51,7 +51,7 @@ class MockAsyncResponse:
     async def text(self):
         return self._text
 
-    async def json(self):
+    async def json(self, content_type=None):
         return {'json': self._text}
 
     def raise_for_status(self):

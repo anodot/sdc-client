@@ -13,10 +13,11 @@ class _BaseStreamSetsApiClient(ABC):
 
     def __init__(self, streamsets_: IStreamSets):
         self.base_url = streamsets_.get_url()
-        self.streamset = streamsets_
+        self.streamsets = streamsets_
+        self.session = None
 
     @abstractmethod
-    def _get_session(self, streamsets_: IStreamSets):
+    def _get_session(self):
         raise NotImplementedError
 
     def _build_url(self, *args):
@@ -32,7 +33,7 @@ class _BaseStreamSetsApiClient(ABC):
 
     def start_pipeline(self, pipeline_id: str):
         self.logger.info(f'Start pipeline `{pipeline_id}`')
-        return self.session.post(self._build_url('pipeline', pipeline_id, 'start'))
+        return self.session.post(self._build_url('pipeline', pipeline_id, 'start'), json={})
 
     def stop_pipeline(self, pipeline_id: str):
         self.logger.info(f'Stop pipeline `{pipeline_id}`')
@@ -111,6 +112,12 @@ class _BaseStreamSetsApiClient(ABC):
     def get_jmx(self, query: str):
         return self.session.get(self._build_url('system', 'jmx'), params={'qry': query})
 
+    def get_pipeline_errors(self, pipeline_id: str, stage_name):
+        self.logger.info(f'Get pipeline `{pipeline_id}` errors')
+        return self.session.get(
+            self._build_url('pipeline', pipeline_id, 'errorRecords'),
+            params={'stageInstanceName': stage_name}
+        )
 
 
 class ApiClientException(Exception):

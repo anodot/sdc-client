@@ -13,7 +13,7 @@ class StreamsetsBalancer:
         self.streamsets_pipelines: Dict[IStreamSets, List[IPipeline]] = get_streamsets_pipelines()
 
     def balance(self):
-        while not self.is_balanced():
+        while not self.is_balanced(self.streamsets_pipelines):
             pipeline = self.streamsets_pipelines[most_loaded_streamsets(self.streamsets_pipelines)].pop()
             to_streamsets = least_loaded_streamsets(self.streamsets_pipelines)
             self._move(pipeline, to_streamsets)
@@ -37,11 +37,12 @@ class StreamsetsBalancer:
             client.start(pipeline)
         self.streamsets_pipelines[to_streamsets].append(pipeline)
 
-    def is_balanced(self) -> bool:
-        if len(self.streamsets_pipelines.keys()) < 2:
+    @staticmethod
+    def is_balanced(streamsets_pipelines: dict) -> bool:
+        if len(streamsets_pipelines) < 2:
             return True
         # streamsets are balanced if the difference in num of their pipelines is 0 or 1
-        lengths = [len(pipelines) for pipelines in self.streamsets_pipelines.values()]
+        lengths = [len(pipelines) for pipelines in streamsets_pipelines.values()]
         return max(lengths) - min(lengths) < 2
 
 
@@ -49,8 +50,7 @@ def get_streamsets_pipelines() -> Dict[IStreamSets, List[IPipeline]]:
     pipelines = inject.instance(IPipelineProvider).get_all()
     sp = {}
     for pipeline_ in pipelines:
-        streamsets = pipeline_.get_streamsets()
-        if streamsets:
+        if streamsets := pipeline_.get_streamsets():
             if streamsets not in sp:
                 sp[streamsets] = []
             sp[streamsets].append(pipeline_)

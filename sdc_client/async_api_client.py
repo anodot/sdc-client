@@ -20,7 +20,7 @@ def async_endpoint(func):
                 res = await func(*args, **kwargs)
                 res.raise_for_status()
                 if res.text:
-                    return await res.json()
+                    return await res.json(content_type=None)
             except aiohttp.ClientConnectionError:
                 if i == MAX_TRIES - 1:
                     raise
@@ -44,10 +44,10 @@ async def _parse_aiohttp_response_errors(result: aiohttp.ClientResponse):
 
 
 class _AsyncClientsManager:
-    def __init__(self, clients: List["_AsyncStreamSetsApiClient"]):
+    def __init__(self, clients: List['_AsyncStreamSetsApiClient']):
         self.clients: Dict[int, _AsyncStreamSetsApiClient] = {}
         for client in clients:
-            self.clients[client.streamset.get_id()] = client
+            self.clients[client.streamsets.get_id()] = client
 
     async def __aexit__(self, exc_type, exc, tb):
         for client in self.clients.values():
@@ -63,13 +63,12 @@ class _AsyncClientsManager:
 class _AsyncStreamSetsApiClient(_BaseStreamSetsApiClient):
     def __init__(self, streamsets_: IStreamSets):
         super().__init__(streamsets_)
-        self.session = None
 
     def _get_session(self):
         session = aiohttp.ClientSession(
             auth=aiohttp.BasicAuth(
-                login=self.streamset.get_username(),
-                password=self.streamset.get_password())
+                login=self.streamsets.get_username(),
+                password=self.streamsets.get_password())
         )
         session.headers.update({'X-Requested-By': 'sdc'})
         return session

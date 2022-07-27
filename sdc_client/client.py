@@ -2,18 +2,15 @@ import json
 import re
 import time
 import inject
-import asyncio
 
 from enum import Enum
 from datetime import datetime
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict
 from sdc_client import balancer
 from sdc_client.api_client import _StreamSetsApiClient, ApiClientException, PipelineFreezeException
-from sdc_client.async_api_client import _AsyncClientsManager, _AsyncStreamSetsApiClient
 from sdc_client.interfaces import ILogger, IStreamSets, IStreamSetsProvider, IPipeline
 
 _clients: Dict[int, _StreamSetsApiClient] = {}
-_clients_async: Dict[int, _AsyncStreamSetsApiClient] = {}
 
 
 # TODO: pass StreamSets instance as an argument
@@ -23,14 +20,6 @@ def _client(pipeline: IPipeline) -> _StreamSetsApiClient:
     if pipeline.get_streamsets().get_id() not in _clients:
         _clients[pipeline.get_streamsets().get_id()] = _StreamSetsApiClient(pipeline.get_streamsets())
     return _clients[pipeline.get_streamsets().get_id()]
-
-
-def _client_async(pipeline: IPipeline) -> _AsyncStreamSetsApiClient:
-    if not pipeline.get_streamsets():
-        raise StreamsetsException(f'Pipeline `{pipeline.get_id()}` does not belong to any StreamSets')
-    if pipeline.get_streamsets().get_id() not in _clients_async:
-        _clients_async[pipeline.get_streamsets().get_id()] = _AsyncStreamSetsApiClient(pipeline.get_streamsets())
-    return _clients_async[pipeline.get_streamsets().get_id()]
 
 
 class Severity(Enum):
@@ -44,13 +33,6 @@ def _get_client(streamsets: IStreamSets) -> _StreamSetsApiClient:
     if streamsets.get_id() not in _clients:
         _clients[streamsets.get_id()] = _StreamSetsApiClient(streamsets)
     return _clients[streamsets.get_id()]
-
-
-def _get_async_client(streamsets: IStreamSets) -> _AsyncStreamSetsApiClient:
-    global _clients_async
-    if streamsets.get_id() not in _clients_async:
-        _clients_async[streamsets.get_id()] = _AsyncStreamSetsApiClient(streamsets)
-    return _clients_async[streamsets.get_id()]
 
 
 def create(pipeline: IPipeline):
@@ -325,17 +307,6 @@ def get_pipeline_offset(pipeline: IPipeline) -> Optional[str]:
 
 def get_jmx(streamsets: IStreamSets, query: str) -> dict:
     return _get_client(streamsets).get_jmx(query)
-
-
-def get_jmxes_async(queries: List[Tuple[IStreamSets, str]], return_exceptions=False) -> List[Dict]:
-    async def execute_requests(queries_: List[Tuple[IStreamSets, str]]):
-        clients = [_get_async_client(ss) for ss in {ss for ss, _ in queries_}]
-        async with _AsyncClientsManager(clients) as manager:
-            return await asyncio.gather(
-                *[asyncio.create_task(manager.clients[streamset_.get_id()].get_jmx(query)) for streamset_, query in queries],
-                return_exceptions=return_exceptions
-            )
-    return asyncio.run(execute_requests(queries))
 
 
 def _format_timestamp(utc_time) -> str:
