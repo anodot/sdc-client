@@ -117,12 +117,14 @@ class TestStreamSetsBalancer(unittest.TestCase):
         balancer_2 = balancer.StreamsetsBalancer()
         balancer_2.rebalance_map = balancer_.rebalance_map
         balancer_2._apply_rebalance_map()
+
         assert balancer_.is_balanced(balancer_2.streamsets_pipelines)
         assert len(balancer_.streamsets_pipelines[s1]) == 6
         assert len(balancer_.streamsets_pipelines[s2]) == 5
         assert len(balancer_.streamsets_pipelines[s3]) == 5
         assert all([p.type == 'dir' for p in balancer_.streamsets_pipelines[s1]])
         assert all([p.type == '1' for p in balancer_.streamsets_pipelines[s2]])
+
 
 if __name__ == '__main__':
     unittest.main()
