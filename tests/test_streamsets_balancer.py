@@ -10,7 +10,7 @@ class TestStreamSetsBalancer(unittest.TestCase):
         client.get_pipeline_status = MagicMock(return_value='bla')
         client.delete = Mock()
         client.create = Mock()
-        balancer.get_streamsets_pipelines = MagicMock(return_value={1: [Mock()]})
+        balancer.get_streamsets_pipelines = MagicMock(return_value={StreamSetsMock(): [PipelineMock()]})
         self.balancer = StreamsetsBalancer()
         self.balancer.logger = Mock()
         self.balancer.logger.info = Mock()
@@ -21,20 +21,26 @@ class TestStreamSetsBalancer(unittest.TestCase):
         assert self.balancer.is_balanced(self.balancer.streamsets_pipelines)
 
     def test_balanced_2(self):
-        self.balancer.streamsets_pipelines = {1: [Mock()], 2: [Mock()], 3: [Mock()]}
+        self.balancer.streamsets_pipelines = {
+            StreamSetsMock(): [PipelineMock()],
+            StreamSetsMock(): [PipelineMock()],
+            StreamSetsMock(): [PipelineMock()]
+        }
         assert self.balancer.is_balanced(self.balancer.streamsets_pipelines)
 
     def test_not_balanced(self):
-        self.balancer.streamsets_pipelines = {1: [Mock(), Mock()], 2: []}
-        assert not self.balancer.is_balanced(self.balancer.streamsets_pipelines)
+        streamsets_pipelines = {
+            StreamSetsMock(): [PipelineMock(), PipelineMock()],
+            StreamSetsMock(): []}
+        assert not self.balancer.is_balanced(streamsets_pipelines)
 
     def test_not_balanced_2(self):
-        self.balancer.streamsets_pipelines = {
-            1: [Mock(), Mock()],
-            2: [Mock(), Mock()],
-            3: [],
+        streamsets_pipelines = {
+            StreamSetsMock(): [PipelineMock(), PipelineMock()],
+            StreamSetsMock(): [PipelineMock(), PipelineMock()],
+            StreamSetsMock(): [],
         }
-        assert not self.balancer.is_balanced(self.balancer.streamsets_pipelines)
+        assert not self.balancer.is_balanced(streamsets_pipelines)
 
     def test_balance(self):
         s1 = StreamSetsMock()
@@ -67,6 +73,56 @@ class TestStreamSetsBalancer(unittest.TestCase):
         assert len(self.balancer.streamsets_pipelines[s2]) == 1
         assert len(self.balancer.streamsets_pipelines[s3]) == 1
 
+    def test_specific_streamsets(self):
+        s1 = StreamSetsMock(type_='dir')
+        s2 = StreamSetsMock()
+        s3 = StreamSetsMock(type_='not_dir')
+        data = {
+            s1: [PipelineMock(type_='dir'),
+                 PipelineMock(type_='dir'),
+                 PipelineMock(type_='dir'),
+                 PipelineMock(type_='dir'),
+                 PipelineMock(type_='dir'),
+                 PipelineMock(type_='1'),
+                 PipelineMock(type_='1'),
+                 PipelineMock(type_='1'),
+                 PipelineMock(type_='1'),
+                 PipelineMock(type_='1'),
+                 PipelineMock(type_='not_dir'),
+                 ],
+            s2: [
+                PipelineMock(type_='1'),
+            ],
+            s3: [
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='1'),
+                PipelineMock(type_='1'),
+                PipelineMock(type_='not_dir'),
+            ],
+        }
+
+        def _move(self, pipeline_, to_streamsets):
+            for ss in self.streamsets_pipelines:
+                if pipeline_ in self.streamsets_pipelines[ss]:
+                    self.streamsets_pipelines[ss].remove(pipeline_)
+            self.streamsets_pipelines[to_streamsets].append(pipeline_)
+
+        balancer.get_streamsets_pipelines = lambda: data.copy()
+        balancer.StreamsetsBalancer._move = _move
+        balancer_ = balancer.StreamsetsBalancer()
+        balancer_.balance()
+
+        assert balancer_.is_balanced(balancer_.streamsets_pipelines)
+
+        balancer_2 = balancer.StreamsetsBalancer()
+        balancer_2.rebalance_map = balancer_.rebalance_map
+        balancer_2._apply_rebalance_map()
+        assert balancer_.is_balanced(balancer_2.streamsets_pipelines)
+        assert len(balancer_.streamsets_pipelines[s1]) == 6
+        assert len(balancer_.streamsets_pipelines[s2]) == 5
+        assert len(balancer_.streamsets_pipelines[s3]) == 5
+        assert all([p.type == 'dir' for p in balancer_.streamsets_pipelines[s1]])
+        assert all([p.type == '1' for p in balancer_.streamsets_pipelines[s2]])
 
 if __name__ == '__main__':
     unittest.main()

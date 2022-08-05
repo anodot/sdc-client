@@ -12,6 +12,8 @@ class StreamsetsBalancer:
 
     def __init__(self):
         self.streamsets_pipelines: Dict[IStreamSets, List[IPipeline]] = get_streamsets_pipelines()
+
+    def _refresh_object(self):
         self._preferred_types = set([ss.get_preferred_type() for ss in self.streamsets_pipelines if ss.get_preferred_type()])
         self._pipelines = list(itertools.chain.from_iterable(self.streamsets_pipelines.values()))
         self._streamsets = list(self.streamsets_pipelines.keys())
@@ -25,6 +27,7 @@ class StreamsetsBalancer:
         self.structure[None] = {}
         self.structure[None]['streamsets'] = [ss for ss in self._streamsets if not ss.get_preferred_type() in self._preferred_types]
         self.structure[None]['pipelines'] = [pipeline for pipeline in self._pipelines if not pipeline.type in self._preferred_types]
+
 
     def _balance_type(self, type_: str):
         # Set all typed pipelines to first streamsets with same type
@@ -50,6 +53,7 @@ class StreamsetsBalancer:
             self.balanced_streamsets_pipelines[to_streamsets].append(pipeline)
 
     def balance(self):
+        self._refresh_object()
         for type_ in self._preferred_types:
             self._balance_type(type_)
 
@@ -86,19 +90,12 @@ class StreamsetsBalancer:
 
     @staticmethod
     def is_balanced(streamsets_pipelines: dict) -> bool:
+        # this method doesnt checks types
         if len(streamsets_pipelines) < 2:
             return True
         # streamsets are balanced if the difference in num of their pipelines is 0 or 1
         lengths = [len(pipelines) for pipelines in streamsets_pipelines.values()]
-        if max(lengths) - min(lengths) < 2:
-            return True
-        most_loaded_streamsets_ = most_loaded_streamsets(streamsets_pipelines)
-        for pipeline in streamsets_pipelines[most_loaded_streamsets_]:
-            if pipeline.type != most_loaded_streamsets_.get_preferred_type():
-                return False
-        return StreamsetsBalancer.is_balanced(
-            {k: v for k, v in streamsets_pipelines.items() if k != most_loaded_streamsets_}
-        )
+        return max(lengths) - min(lengths) < 2
 
 
 def get_streamsets_pipelines() -> Dict[IStreamSets, List[IPipeline]]:
