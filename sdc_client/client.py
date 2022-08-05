@@ -35,12 +35,21 @@ def _get_client(streamsets: IStreamSets) -> _StreamSetsApiClient:
     return _clients[streamsets.get_id()]
 
 
+def _get_streamsets_for_pipeline(pipeline: IPipeline):
+    streamsets_pipelines = balancer.get_streamsets_pipelines()
+    streamsets_with_preferred_type = filter(lambda ss: ss.get_preferred_type() == pipeline.type, streamsets_pipelines)
+    if streamsets_with_preferred_type:
+        return balancer.least_loaded_streamsets({
+            streamsets_: streamsets_pipelines[streamsets_] for streamsets_ in streamsets_with_preferred_type
+        })
+    else:
+        return balancer.least_loaded_streamsets(streamsets_pipelines)
+
+
 def create(pipeline: IPipeline):
     # todo remove this if check and make streamsets mandatory after that fix todos above
     if not pipeline.get_streamsets():
-        pipeline.set_streamsets(
-            balancer.least_loaded_streamsets(balancer.get_streamsets_pipelines())
-        )
+        pipeline.set_streamsets(_get_streamsets_for_pipeline(pipeline))
     try:
         _client(pipeline).create_pipeline(pipeline.get_id())
     except ApiClientException as e:

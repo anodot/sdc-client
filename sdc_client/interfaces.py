@@ -19,6 +19,10 @@ class IStreamSets(ABC):
     def get_password(self) -> str:
         pass
 
+    @abstractmethod
+    def get_preferred_type(self) -> str:
+        pass
+
 
 class IPipeline(ABC):
     STATUS_RUNNING = 'RUNNING'
@@ -50,6 +54,12 @@ class IPipeline(ABC):
     @abstractmethod
     def delete_streamsets(self):
         pass
+
+    @property
+    @abstractmethod
+    def type(self) -> str:
+        pass
+
 
 
 class IStreamSetsProvider(ABC):
