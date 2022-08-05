@@ -26,32 +26,33 @@ class TestBalancerAsync(unittest.TestCase):
             assert b.is_balanced(b.balanced_streamsets_pipelines)
 
     def test_specific_streamsets(self):
-        s1 = StreamSetsMock(type_='dir')
-        s2 = StreamSetsMock(type_='dir')
-        s3 = StreamSetsMock(type_='not_dir')
-        data = {
-            s1: [PipelineMock(type_='dir'),
-                 PipelineMock(type_='dir'),
-                 PipelineMock(type_='1'),
-                 PipelineMock(type_='1'),
-                 PipelineMock(type_='1'),
-                 PipelineMock(type_='not_dir'),
-            ],
-            s2: [],
-            s3: [
-                PipelineMock(type_='dir'),
-                PipelineMock(type_='2'),
-                PipelineMock(type_='2'),
-                PipelineMock(type_='2'),
-                PipelineMock(type_='not_dir'),
-            ],
-        }
+        with patch.object(balancer, 'get_streamsets_pipelines') as mock:
+            s1 = StreamSetsMock(type_='dir')
+            s2 = StreamSetsMock(type_='dir')
+            s3 = StreamSetsMock(type_='not_dir')
+            data = {
+                s1: [PipelineMock(type_='dir'),
+                     PipelineMock(type_='dir'),
+                     PipelineMock(type_='1'),
+                     PipelineMock(type_='1'),
+                     PipelineMock(type_='1'),
+                     PipelineMock(type_='not_dir'),
+                ],
+                s2: [],
+                s3: [
+                    PipelineMock(type_='dir'),
+                    PipelineMock(type_='2'),
+                    PipelineMock(type_='2'),
+                    PipelineMock(type_='2'),
+                    PipelineMock(type_='not_dir'),
+                ],
+            }
+            mock.return_valuev = data.copy()
 
-        balancer.get_streamsets_pipelines = lambda: data.copy()
-        balancer_ = async_balancer.StreamsetsBalancerAsync()
-        balancer_.balance()
-        assert not balancer_.is_balanced(data)
-        assert balancer_.is_balanced(balancer_.balanced_streamsets_pipelines)
+            balancer_ = async_balancer.StreamsetsBalancerAsync()
+            balancer_.balance()
+            assert not balancer_.is_balanced(data)
+            assert balancer_.is_balanced(balancer_.balanced_streamsets_pipelines)
 
 
 if __name__ == '__main__':
