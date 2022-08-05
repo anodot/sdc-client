@@ -10,22 +10,6 @@ class TestBalancerAsync(unittest.TestCase):
     def setUp(self):
         inject.instance = instance
 
-    def test_x_loaded_streamsets(self):
-        s1 = StreamSetsMock()
-        s2 = StreamSetsMock()
-        value = {
-            s1: [PipelineMock(), PipelineMock()],
-            s2: []
-        }
-        with patch.object(balancer, 'get_streamsets_pipelines') as m:
-            m.return_value = value
-
-            b = async_balancer.StreamsetsBalancerAsync()
-            s1_expected = async_balancer.most_loaded_streamsets(b.streamsets_pipelines)
-            s2_expected = async_balancer.least_loaded_streamsets(b.streamsets_pipelines)
-            assert s1_expected == s1
-            assert s2_expected == s2
-
     def test_balance_not_needed(self):
         s1 = StreamSetsMock()
         s2 = StreamSetsMock()
