@@ -69,5 +69,6 @@ class TestBalancerAsync(unittest.TestCase):
         assert not balancer_.is_balanced(data)
         assert balancer_.is_balanced(balancer_.balanced_streamsets_pipelines)
 
+
 if __name__ == '__main__':
     unittest.main()

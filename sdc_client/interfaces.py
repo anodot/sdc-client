@@ -61,7 +61,6 @@ class IPipeline(ABC):
         pass
 
 
-
 class IStreamSetsProvider(ABC):
     @abstractmethod
     def get(self, id_: int) -> IStreamSets:

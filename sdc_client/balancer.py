@@ -1,7 +1,6 @@
 import inject
 import itertools
 
-from collections import defaultdict
 from typing import List, Dict
 from sdc_client import client
 from sdc_client.interfaces import IPipeline, IStreamSetsProvider, IPipelineProvider, ILogger, IStreamSets
@@ -32,7 +31,6 @@ class StreamsetsBalancer:
         pipelines = self.structure[type_]['pipelines']
         streamsets = self.structure[type_]['streamsets']
         for pipeline_ in pipelines:
-            self._pipelines.remove(pipeline_)
             self.rebalance_map[pipeline_] = streamsets[0]
             self.balanced_streamsets_pipelines[streamsets[0]].append(pipeline_)
         sub_pipelines_dict = dict()
@@ -55,7 +53,7 @@ class StreamsetsBalancer:
         for type_ in self._preferred_types:
             self._balance_type(type_)
 
-        for pipeline in self._pipelines:
+        for pipeline in self.structure[None]['pipelines']:
             streamsets = least_loaded_streamsets(self.balanced_streamsets_pipelines)
             self.rebalance_map[pipeline] = streamsets
             self.balanced_streamsets_pipelines[streamsets].append(pipeline)

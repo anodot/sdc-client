@@ -108,5 +108,6 @@ class TestBalancer(unittest.TestCase):
         balancer_2._apply_rebalance_map()
         assert balancer_.is_balanced(balancer_2.streamsets_pipelines)
 
+
 if __name__ == '__main__':
     unittest.main()
