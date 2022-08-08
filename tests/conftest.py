@@ -25,7 +25,7 @@ class PipelineMock:
         return o
 
     @property
-    def type(self):
+    def source_type(self):
         return self.type_
 
     def __repr__(self):

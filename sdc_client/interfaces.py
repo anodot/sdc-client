@@ -57,7 +57,7 @@ class IPipeline(ABC):
 
     @property
     @abstractmethod
-    def type(self) -> str:
+    def source_type(self) -> str:
         pass
 
 

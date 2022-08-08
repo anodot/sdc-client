@@ -23,10 +23,10 @@ class StreamsetsBalancer:
         for type_ in self._preferred_types:
             self.structure[type_] = {}
             self.structure[type_]['streamsets'] = [ss for ss in self._streamsets if ss.get_preferred_type() == type_]
-            self.structure[type_]['pipelines'] = [pipeline for pipeline in self._pipelines if pipeline.type == type_]
+            self.structure[type_]['pipelines'] = [pipeline for pipeline in self._pipelines if pipeline.source_type == type_]
         self.structure[None] = {}
         self.structure[None]['streamsets'] = [ss for ss in self._streamsets if not ss.get_preferred_type() in self._preferred_types]
-        self.structure[None]['pipelines'] = [pipeline for pipeline in self._pipelines if not pipeline.type in self._preferred_types]
+        self.structure[None]['pipelines'] = [pipeline for pipeline in self._pipelines if not pipeline.source_type in self._preferred_types]
 
 
     def _balance_type(self, type_: str):

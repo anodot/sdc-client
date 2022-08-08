@@ -122,8 +122,8 @@ class TestStreamSetsBalancer(unittest.TestCase):
         assert len(balancer_.streamsets_pipelines[s1]) == 6
         assert len(balancer_.streamsets_pipelines[s2]) == 5
         assert len(balancer_.streamsets_pipelines[s3]) == 5
-        assert all([p.type == 'dir' for p in balancer_.streamsets_pipelines[s1]])
-        assert all([p.type == '1' for p in balancer_.streamsets_pipelines[s2]])
+        assert all([p.source_type == 'dir' for p in balancer_.streamsets_pipelines[s1]])
+        assert all([p.source_type == '1' for p in balancer_.streamsets_pipelines[s2]])
 
 
 if __name__ == '__main__':
