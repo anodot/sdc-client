@@ -37,7 +37,7 @@ def _get_client(streamsets: IStreamSets) -> _StreamSetsApiClient:
 
 def _get_streamsets_for_pipeline(pipeline: IPipeline):
     streamsets_pipelines = balancer.get_streamsets_pipelines()
-    streamsets_with_preferred_type = filter(lambda ss: ss.get_preferred_type() == pipeline.source_type, streamsets_pipelines)
+    streamsets_with_preferred_type = list(filter(lambda ss: ss.get_preferred_type() == pipeline.source_type, streamsets_pipelines))
     if streamsets_with_preferred_type:
         return balancer.least_loaded_streamsets({
             streamsets_: streamsets_pipelines[streamsets_] for streamsets_ in streamsets_with_preferred_type
