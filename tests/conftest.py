@@ -29,7 +29,7 @@ class PipelineMock:
         return self.type_
 
     def __repr__(self):
-        return f'PipelineMock({self.id}| type={self.type})'
+        return f'PipelineMock({self.id}| type={self.type_})'
 
 
 class StreamSetsMock:

@@ -1,7 +1,8 @@
 import inject
 import itertools
+import math
 
-from typing import List, Dict
+from typing import List, Dict, Set
 from sdc_client import client
 from sdc_client.interfaces import IPipeline, IStreamSetsProvider, IPipelineProvider, ILogger, IStreamSets
 
@@ -14,20 +15,12 @@ class StreamsetsBalancer:
         self.streamsets_pipelines: Dict[IStreamSets, List[IPipeline]] = get_streamsets_pipelines()
 
     def _refresh_object(self):
-        self._preferred_types = set([ss.get_preferred_type() for ss in self.streamsets_pipelines if ss.get_preferred_type()])
-        self._pipelines = list(itertools.chain.from_iterable(self.streamsets_pipelines.values()))
-        self._streamsets = list(self.streamsets_pipelines.keys())
+        self._preferred_types = self._extract_preferred_types(self.streamsets_pipelines)
+        self._pipelines = self._extract_pipelines(self.streamsets_pipelines)
+        self._streamsets = self._extract_streamsets(self.streamsets_pipelines)
         self.balanced_streamsets_pipelines: Dict[IStreamSets, List[IPipeline]] = {ss: [] for ss in self._streamsets}
         self.rebalance_map = {}
-        self.structure = {}
-        for type_ in self._preferred_types:
-            self.structure[type_] = {}
-            self.structure[type_]['streamsets'] = [ss for ss in self._streamsets if ss.get_preferred_type() == type_]
-            self.structure[type_]['pipelines'] = [pipeline for pipeline in self._pipelines if pipeline.source_type == type_]
-        self.structure[None] = {}
-        self.structure[None]['streamsets'] = [ss for ss in self._streamsets if not ss.get_preferred_type() in self._preferred_types]
-        self.structure[None]['pipelines'] = [pipeline for pipeline in self._pipelines if not pipeline.source_type in self._preferred_types]
-
+        self.structure = self._get_streamsets_structure(self.streamsets_pipelines)
 
     def _balance_type(self, type_: str):
         # Set all typed pipelines to first streamsets with same type
@@ -36,14 +29,11 @@ class StreamsetsBalancer:
         for pipeline_ in pipelines:
             self.rebalance_map[pipeline_] = streamsets[0]
             self.balanced_streamsets_pipelines[streamsets[0]].append(pipeline_)
-        sub_pipelines_dict = dict()
-        sub_pipelines_dict[streamsets[0]] = pipelines
+        sub_pipelines_dict = {streamsets[0]: pipelines}
         for ss in streamsets[1:]:
             sub_pipelines_dict[ss] = []
         # balance it
-        self._balance(sub_pipelines_dict)
-
-    def _balance(self, streamsets_pipelines: Dict[IStreamSets, List[IPipeline]]):
+        streamsets_pipelines = sub_pipelines_dict
         while not self.is_balanced(streamsets_pipelines):
             streamsets = most_loaded_streamsets(streamsets_pipelines)
             pipeline = self.streamsets_pipelines[streamsets].pop()
@@ -51,6 +41,7 @@ class StreamsetsBalancer:
             streamsets_pipelines[to_streamsets].append(pipeline)
             self.rebalance_map[pipeline] = to_streamsets
             self.balanced_streamsets_pipelines[to_streamsets].append(pipeline)
+
 
     def balance(self):
         self._refresh_object()
@@ -89,13 +80,62 @@ class StreamsetsBalancer:
         self.logger.info(f'Moved `{pipeline.get_id()}` to `{pipeline.get_streamsets().get_url()}`')
 
     @staticmethod
-    def is_balanced(streamsets_pipelines: dict) -> bool:
-        # this method doesnt checks types
+    def is_balanced(streamsets_pipelines: Dict[IStreamSets, List[IPipeline]]) -> bool:
+        # single streamsets is always balanced
         if len(streamsets_pipelines) < 2:
             return True
-        # streamsets are balanced if the difference in num of their pipelines is 0 or 1
+
+        structure = StreamsetsBalancer._get_streamsets_structure(streamsets_pipelines)
+        # if len(structure) == 1, streamsets have not preferred type, then use simple rule
+        if len(structure) == 1:
+            lengths = [len(pipelines) for pipelines in streamsets_pipelines.values()]
+            return max(lengths) - min(lengths) < 2
+        # check all typed pipelines assigned to streamsets with same type
+        for streamsets in streamsets_pipelines:
+            for pipeline_ in streamsets_pipelines[streamsets]:
+                if pipeline_.source_type in structure and pipeline_.source_type != streamsets.get_preferred_type():
+                    return False
+        # calculate max difference between streamsets
+        n_streamsets = len(StreamsetsBalancer._extract_streamsets(streamsets_pipelines))
+        n_pipelines = len(StreamsetsBalancer._extract_pipelines(streamsets_pipelines))
+        excepted_avg_len = n_pipelines / n_streamsets
+        extra_lengths = list(filter(
+            lambda l: l > 0,
+            [len(structure[type_]['pipelines']) - excepted_avg_len for type_ in structure if type_],
+        ))
+        max_difference = max(extra_lengths) + sum(extra_lengths) / (n_streamsets - len(extra_lengths))
         lengths = [len(pipelines) for pipelines in streamsets_pipelines.values()]
-        return max(lengths) - min(lengths) < 2
+        return max(lengths) - min(lengths) < 2 + max_difference
+
+    @staticmethod
+    def _extract_preferred_types(streamsets_pipelines: Dict[IStreamSets, List[IPipeline]]) -> Set[IPipeline]:
+        return {ss.get_preferred_type() for ss in streamsets_pipelines if ss.get_preferred_type()}
+
+    @staticmethod
+    def _extract_pipelines(streamsets_pipelines: Dict[IStreamSets, List[IPipeline]]) -> List[IPipeline]:
+        return list(itertools.chain.from_iterable(streamsets_pipelines.values()))
+
+    @staticmethod
+    def _extract_streamsets(streamsets_pipelines: Dict[IStreamSets, List[IPipeline]]) -> List[IStreamSets]:
+        return list(streamsets_pipelines.keys())
+
+    @staticmethod
+    def _get_streamsets_structure(streamsets_pipelines: Dict[IStreamSets, List[IPipeline]]):
+        _preferred_types = StreamsetsBalancer._extract_preferred_types(streamsets_pipelines)
+        _pipelines = StreamsetsBalancer._extract_pipelines(streamsets_pipelines)
+        _streamsets = StreamsetsBalancer._extract_streamsets(streamsets_pipelines)
+        structure = {}
+        for type_ in _preferred_types:
+            structure[type_] = {
+                'streamsets': [ss for ss in _streamsets if ss.get_preferred_type() == type_],
+                'pipelines': [pipeline for pipeline in _pipelines if pipeline.source_type == type_]
+            }
+        structure[None] = {
+            'streamsets': [ss for ss in _streamsets if ss.get_preferred_type() not in _preferred_types],
+            'pipelines': [pipeline for pipeline in _pipelines if
+                                pipeline.source_type not in _preferred_types]
+        }
+        return structure
 
 
 def get_streamsets_pipelines() -> Dict[IStreamSets, List[IPipeline]]:

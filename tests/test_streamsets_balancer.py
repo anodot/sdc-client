@@ -42,6 +42,85 @@ class TestStreamSetsBalancer(unittest.TestCase):
         }
         assert not self.balancer.is_balanced(streamsets_pipelines)
 
+    def test_balanced_specific_1(self):
+        streamsets_pipelines = {
+            StreamSetsMock(type_='dir'): [
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+            ],
+            StreamSetsMock(): [
+                PipelineMock(type_='1'),
+            ],
+        }
+        assert self.balancer.is_balanced(streamsets_pipelines)
+
+    def test_balanced_specific_2(self):
+        streamsets_pipelines = {
+            StreamSetsMock(type_='dir'): [
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+            ],
+            StreamSetsMock(type_='not_dir'): [
+                PipelineMock(type_='not_dir'),
+            ],
+        }
+        assert self.balancer.is_balanced(streamsets_pipelines)
+
+    def test_balanced_specific_3(self):
+        streamsets_pipelines = {
+            StreamSetsMock(type_='dir'): [
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+            ],
+            StreamSetsMock(): [
+                PipelineMock(type_='1'),
+            ],
+            StreamSetsMock(): [
+                PipelineMock(type_='1'),
+                PipelineMock(type_='1'),
+            ],
+        }
+        assert self.balancer.is_balanced(streamsets_pipelines)
+
+
+    def test_not_balanced_specific_1(self):
+        streamsets_pipelines = {
+            StreamSetsMock(type_='dir'): [
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+            ],
+            StreamSetsMock(): [
+                PipelineMock(),
+                PipelineMock(type_='dir'),
+            ],
+        }
+        assert not self.balancer.is_balanced(streamsets_pipelines)
+
+    def test_not_balanced_specific_2(self):
+        streamsets_pipelines = {
+            StreamSetsMock(type_='dir'): [
+                PipelineMock(type_='not_dir'),
+                PipelineMock(type_='dir'),
+                PipelineMock(type_='dir'),
+            ],
+            StreamSetsMock(type_='not_dir'): [
+                PipelineMock(type_='not_dir'),
+            ],
+        }
+        assert not self.balancer.is_balanced(streamsets_pipelines)
+
     def test_balance(self):
         s1 = StreamSetsMock()
         s2 = StreamSetsMock()
@@ -83,6 +162,8 @@ class TestStreamSetsBalancer(unittest.TestCase):
                  PipelineMock(type_='dir'),
                  PipelineMock(type_='dir'),
                  PipelineMock(type_='dir'),
+                 PipelineMock(type_='dir'),
+                 PipelineMock(type_='dir'),
                  PipelineMock(type_='1'),
                  PipelineMock(type_='1'),
                  PipelineMock(type_='1'),
@@ -119,7 +200,7 @@ class TestStreamSetsBalancer(unittest.TestCase):
         balancer_2._apply_rebalance_map()
 
         assert balancer_.is_balanced(balancer_2.streamsets_pipelines)
-        assert len(balancer_.streamsets_pipelines[s1]) == 6
+        assert len(balancer_.streamsets_pipelines[s1]) == 8
         assert len(balancer_.streamsets_pipelines[s2]) == 5
         assert len(balancer_.streamsets_pipelines[s3]) == 5
         assert all([p.source_type == 'dir' for p in balancer_.streamsets_pipelines[s1]])

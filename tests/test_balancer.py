@@ -1,6 +1,5 @@
 import unittest
 import inject
-import json
 
 from sdc_client import balancer
 from conftest import StreamSetsMock, PipelineMock, instance
