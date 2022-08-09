@@ -1,6 +1,5 @@
 import inject
 import itertools
-import math
 
 from typing import List, Dict, Set
 from sdc_client import client
