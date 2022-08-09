@@ -42,10 +42,8 @@ def _get_streamsets_for_pipeline(pipeline: IPipeline):
                                       for streamsets_ in streamsets_pipelines
                                       if streamsets_.get_preferred_type() == pipeline.source_type
     }
-    if streamsets_with_preferred_type:
-        return balancer.least_loaded_streamsets(streamsets_with_preferred_type)
-    else:
-        return balancer.least_loaded_streamsets(streamsets_pipelines)
+    streamsets_to_get = streamsets_with_preferred_type or streamsets_pipelines
+    return balancer.least_loaded_streamsets(streamsets_to_get)
 
 
 def create(pipeline: IPipeline):
