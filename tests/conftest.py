@@ -7,9 +7,12 @@ from sdc_client import IPipelineProvider
 
 
 class PipelineMock:
-    @staticmethod
-    def get_id():
-        return 'id'
+    def __init__(self, type_: str = None):
+        self.type_ = type_
+        self.id = randint(0, 1000)
+
+    def get_id(self):
+        return self.id
 
     @staticmethod
     def set_streamsets(s):
@@ -21,10 +24,18 @@ class PipelineMock:
         o.get_url = MagicMock(return_value='url')
         return o
 
+    @property
+    def source_type(self):
+        return self.type_
+
+    def __repr__(self):
+        return f'PipelineMock({self.id}| type={self.type_})'
+
 
 class StreamSetsMock:
-    def __init__(self):
+    def __init__(self, type_: str = None):
         self.id = randint(0, 1000)
+        self.type = type_
 
     @staticmethod
     def get_url():
@@ -41,6 +52,12 @@ class StreamSetsMock:
     # @staticmethod
     def get_id(self):
         return self.id
+
+    def get_preferred_type(self) -> str:
+        return self.type
+
+    def __repr__(self):
+        return f'StreamsetsMock({self.id}| type={self.type})'
 
 
 class MockAsyncResponse:

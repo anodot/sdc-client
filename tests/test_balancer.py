@@ -10,6 +10,7 @@ class TestBalancer(unittest.TestCase):
         inject.instance = instance
 
     def test_get_streamsets_pipelines(self):
+        print(balancer.get_streamsets_pipelines)
         sp = balancer.get_streamsets_pipelines()
         assert len(sp.keys()) == 2
 
